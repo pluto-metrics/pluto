@@ -10,7 +10,7 @@ require (
 	github.com/golang/snappy v0.0.4
 	github.com/jinzhu/configor v1.2.2
 	github.com/pkg/errors v0.9.1
-	github.com/pluto-metrics/rowbinary v0.0.0-20241008141034-d5eb19040732
+	github.com/pluto-metrics/rowbinary v0.0.0-20241008204809-af963e98f3ae
 	github.com/prometheus/prometheus v0.54.1
 	github.com/stretchr/testify v1.9.0
 )

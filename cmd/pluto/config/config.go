@@ -8,7 +8,7 @@ import (
 type ClickHouse struct {
 	DSN      string `default:"http://127.0.0.1:8123" validator:"uri"`
 	Database string `default:"default"`
-	Table    string `default:"samples"`
+	Table    string `default:"samples_null"`
 }
 
 type Config struct {
