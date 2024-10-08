@@ -6,7 +6,7 @@ import (
 )
 
 type ClickHouse struct {
-	DSN      string `default:"http://127.0.0.1:8123" validator:"uri"`
+	DSN      string `default:"http://127.0.0.1:8123" validate:"uri"`
 	Database string `default:"default"`
 	Table    string `default:"samples_null"`
 }
@@ -14,8 +14,8 @@ type ClickHouse struct {
 type Config struct {
 	Insert struct {
 		Enabled bool   `default:"true"`
-		Listen  string `default:"0.0.0.0:9095" validator:"hostname_port"`
-		IDFunc  string `default:"name_with_sha256" validator:"oneof name_with_sha256"`
+		Listen  string `default:"0.0.0.0:9095" validate:"hostname_port"`
+		IDFunc  string `default:"name_with_sha256" validate:"oneof=name_with_sha256"`
 		Target  ClickHouse
 	}
 
@@ -24,7 +24,7 @@ type Config struct {
 
 	Debug struct {
 		Enabled bool   `default:"true"`
-		Listen  string `default:"0.0.0.0:9096" validator:"hostname_port"`
+		Listen  string `default:"0.0.0.0:9096" validate:"hostname_port"`
 		Pprof   bool   `default:"true"`
 		Metrics bool   `default:"true"`
 	}
