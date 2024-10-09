@@ -25,7 +25,7 @@ type Config struct {
 
 	Debug struct {
 		Enabled bool   `default:"true"`
-		Listen  string `default:"0.0.0.0:9096" validate:"hostname_port"`
+		Listen  string `default:"0.0.0.0:9095" validate:"hostname_port"`
 		Pprof   bool   `default:"true"`
 		Metrics bool   `default:"true"`
 	}

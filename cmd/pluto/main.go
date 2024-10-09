@@ -4,10 +4,14 @@ import (
 	"context"
 	"flag"
 	"log"
+	"net/http/pprof"
 
 	"github.com/pluto-metrics/pluto/cmd/pluto/config"
 	"github.com/pluto-metrics/pluto/pkg/insert"
 	"github.com/pluto-metrics/pluto/pkg/listen"
+	"github.com/prometheus/client_golang/prometheus"
+	"github.com/prometheus/client_golang/prometheus/collectors"
+	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"go.uber.org/zap"
 )
 
@@ -41,6 +45,31 @@ func main() {
 		})
 
 		mux.Handle("/api/v1/write", rw)
+	}
+
+	//debug
+	if cfg.Debug.Enabled {
+		mux := httpManager.Mux(cfg.Debug.Listen)
+
+		if cfg.Debug.Metrics {
+			prometheus.MustRegister(
+				collectors.NewBuildInfoCollector(),
+			)
+
+			mux.Handle("/metrics", promhttp.HandlerFor(
+				prometheus.DefaultGatherer, promhttp.HandlerOpts{
+					Registry: prometheus.DefaultRegisterer,
+				}))
+		}
+
+		if cfg.Debug.Pprof {
+			mux.HandleFunc("/debug/pprof/", pprof.Index)
+			mux.HandleFunc("/debug/pprof/cmdline", pprof.Cmdline)
+			mux.HandleFunc("/debug/pprof/profile", pprof.Profile)
+			mux.HandleFunc("/debug/pprof/symbol", pprof.Symbol)
+			mux.HandleFunc("/debug/pprof/trace", pprof.Trace)
+		}
+
 	}
 
 	ctx, cancel := context.WithCancel(context.Background())
