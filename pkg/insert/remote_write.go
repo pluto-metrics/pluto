@@ -12,6 +12,7 @@ import (
 	"github.com/pluto-metrics/rowbinary"
 	"github.com/pluto-metrics/rowbinary/schema"
 	"github.com/prometheus/prometheus/prompb"
+	"go.uber.org/zap"
 
 	_ "github.com/gogo/protobuf/gogoproto"
 	proto "github.com/gogo/protobuf/proto"
@@ -35,14 +36,14 @@ func NewPrometheusRemoteWrite(opts Opts) *PrometheusRemoteWrite {
 func (rcv *PrometheusRemoteWrite) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	reqCompressed, err := io.ReadAll(r.Body)
 	if err != nil {
-		fmt.Println(err)
+		zap.L().Error("can't read prometheus request", zap.Error(err))
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
 
 	reqRaw, err := snappy.Decode(nil, reqCompressed)
 	if err != nil {
-		fmt.Println(err)
+		zap.L().Error("can't decode prometheus request", zap.Error(err))
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
@@ -50,7 +51,7 @@ func (rcv *PrometheusRemoteWrite) ServeHTTP(w http.ResponseWriter, r *http.Reque
 	var req prompb.WriteRequest
 
 	if err := proto.Unmarshal(reqRaw, &req); err != nil {
-		fmt.Println(err)
+		zap.L().Error("can't unmarshal prometheus request", zap.Error(err))
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
@@ -59,7 +60,7 @@ func (rcv *PrometheusRemoteWrite) ServeHTTP(w http.ResponseWriter, r *http.Reque
 		Database: rcv.opts.ClickhouseDatabase,
 	})
 	if err != nil {
-		fmt.Println(err)
+		zap.L().Error("can't create request to clickhouse", zap.Error(err))
 		http.Error(w, err.Error(), http.StatusBadGateway)
 		return
 	}
@@ -68,7 +69,7 @@ func (rcv *PrometheusRemoteWrite) ServeHTTP(w http.ResponseWriter, r *http.Reque
 
 	_, err = fmt.Fprintf(chRequest, "INSERT INTO %s FORMAT RowBinaryWithNamesAndTypes\n", rcv.opts.ClickhouseTable)
 	if err != nil {
-		fmt.Println(err)
+		zap.L().Error("can't write query to clickhouse", zap.Error(err))
 		http.Error(w, err.Error(), http.StatusBadGateway)
 		return
 	}
@@ -82,7 +83,7 @@ func (rcv *PrometheusRemoteWrite) ServeHTTP(w http.ResponseWriter, r *http.Reque
 		Column("value", rowbinary.Float64)
 
 	if err := chRequestWriter.WriteHeader(); err != nil {
-		fmt.Println(err)
+		zap.L().Error("can't write rowbinary header to clickhouse", zap.Error(err))
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
@@ -103,16 +104,23 @@ func (rcv *PrometheusRemoteWrite) ServeHTTP(w http.ResponseWriter, r *http.Reque
 				s.Samples[j].Timestamp,
 				s.Samples[j].Value,
 			); err != nil {
-				fmt.Println(err)
+				zap.L().Error("can't write sample to clickhouse", zap.Error(err))
 				http.Error(w, err.Error(), http.StatusInternalServerError)
 				return
 			}
 		}
 	}
 
-	_, err = chRequest.Finish()
+	chResponse, err := chRequest.Finish()
 	if err != nil {
-		fmt.Println(err)
+		zap.L().Error("can't finish request to clickhouse", zap.Error(err))
+		http.Error(w, err.Error(), http.StatusBadGateway)
+		return
+	}
+
+	err = chResponse.Close()
+	if err != nil {
+		zap.L().Error("can't close response from clickhouse", zap.Error(err))
 		http.Error(w, err.Error(), http.StatusBadGateway)
 		return
 	}

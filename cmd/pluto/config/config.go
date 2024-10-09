@@ -3,6 +3,7 @@ package config
 import (
 	"github.com/go-playground/validator/v10"
 	"github.com/jinzhu/configor"
+	"go.uber.org/zap"
 )
 
 type ClickHouse struct {
@@ -28,10 +29,18 @@ type Config struct {
 		Pprof   bool   `default:"true"`
 		Metrics bool   `default:"true"`
 	}
+
+	Logging zap.Config
 }
 
-func LoadFromFile(filename string) (*Config, error) {
+func LoadFromFile(filename string, development bool) (*Config, error) {
 	cfg := Config{}
+
+	if development {
+		cfg.Logging = zap.NewDevelopmentConfig()
+	} else {
+		cfg.Logging = zap.NewProductionConfig()
+	}
 	if err := configor.Load(&cfg, filename); err != nil {
 		return nil, err
 	}

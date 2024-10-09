@@ -8,17 +8,26 @@ import (
 	"github.com/pluto-metrics/pluto/cmd/pluto/config"
 	"github.com/pluto-metrics/pluto/pkg/insert"
 	"github.com/pluto-metrics/pluto/pkg/listen"
+	"go.uber.org/zap"
 )
 
 func main() {
 	var configFilename string
+	var development bool
 	flag.StringVar(&configFilename, "config", "config.yaml", "Config filename")
+	flag.BoolVar(&development, "dev", false, "Use development config by default")
 	flag.Parse()
 
-	cfg, err := config.LoadFromFile(configFilename)
+	cfg, err := config.LoadFromFile(configFilename, development)
 	if err != nil {
 		log.Fatal(err)
 	}
+
+	// logging
+	logger := zap.Must(cfg.Logging.Build())
+	defer logger.Sync()
+	defer zap.RedirectStdLog(logger)()
+	defer zap.ReplaceGlobals(logger)()
 
 	httpManager := listen.NewHTTP()
 	// receiver
