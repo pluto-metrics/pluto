@@ -9,6 +9,7 @@ import (
 	"github.com/pluto-metrics/pluto/cmd/pluto/config"
 	"github.com/pluto-metrics/pluto/pkg/insert"
 	"github.com/pluto-metrics/pluto/pkg/listen"
+	"github.com/pluto-metrics/pluto/pkg/prom"
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/collectors"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
@@ -38,9 +39,9 @@ func main() {
 	if cfg.Insert.Enabled {
 		mux := httpManager.Mux(cfg.Insert.Listen)
 		rw := insert.NewPrometheusRemoteWrite(insert.Opts{
-			ClickhouseDSN:      cfg.Insert.Target.DSN,
-			ClickhouseDatabase: cfg.Insert.Target.Database,
-			ClickhouseTable:    cfg.Insert.Target.Table,
+			ClickhouseDSN:      cfg.ClickHouse.DSN,
+			ClickhouseDatabase: cfg.ClickHouse.Database,
+			ClickhouseTable:    cfg.Insert.Table,
 			IDFunc:             cfg.Insert.IDFunc,
 		})
 
@@ -74,6 +75,14 @@ func main() {
 
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
+
+	// prometheus
+	if cfg.Prometheus.Enabled {
+		go func() {
+			promErr := prom.Run(ctx, cfg)
+			log.Fatal(promErr)
+		}()
+	}
 
 	go func() {
 		listenErr := httpManager.Run(ctx)
