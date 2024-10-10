@@ -20,6 +20,7 @@ func (q *Querier) whereMatchLabels(_ context.Context, where *sql.Where, matchers
 			case labels.MatchNotRegexp:
 				// @TODO
 			}
+			continue
 		}
 
 		switch m.Type {

@@ -3,7 +3,6 @@ package prom
 import (
 	"bufio"
 	"context"
-	"fmt"
 
 	"github.com/pluto-metrics/pluto/pkg/sql"
 	"github.com/pluto-metrics/rowbinary"
@@ -21,8 +20,6 @@ func (q *Querier) LabelNames(ctx context.Context, hints *storage.LabelHints, mat
 	now := timeNow()
 	start := now.Add(-q.config.Select.AutocompleteLookback).UnixMilli()
 	end := now.UnixMilli()
-
-	fmt.Println("LabelNames call")
 
 	where := sql.NewWhere()
 	q.whereSeriesTimeRange(ctx, where, start, end)

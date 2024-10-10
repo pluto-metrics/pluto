@@ -25,7 +25,13 @@ func (q *Querier) LabelValues(ctx context.Context, label string, hints *storage.
 	q.whereMatchLabels(ctx, where, matchers)
 
 	qq, err := sql.Template(`
-		SELECT arrayElement(labels, {{.label|quote}}) AS value
+		SELECT
+			{{if (eq .label "__name__")}}
+				name
+			{{else}}
+				arrayElement(labels, {{.label|quote}})
+			{{end}}
+			AS value
 		FROM {{.table}}
 		{{.where.SQL}}
 		GROUP BY value
