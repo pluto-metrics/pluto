@@ -9,6 +9,19 @@ import (
 
 func (q *Querier) whereMatchLabels(_ context.Context, where *sql.Where, matchers []*labels.Matcher) {
 	for _, m := range matchers {
+		if m.Name == "__name__" {
+			switch m.Type {
+			case labels.MatchEqual:
+				where.And(sql.Eq(sql.Column("name"), sql.Quote(m.Value)))
+			case labels.MatchNotEqual:
+				where.And(sql.Ne(sql.Column("name"), sql.Quote(m.Value)))
+			case labels.MatchRegexp:
+				// @TODO
+			case labels.MatchNotRegexp:
+				// @TODO
+			}
+		}
+
 		switch m.Type {
 		case labels.MatchEqual:
 			where.And(sql.Eq(sql.ArrayElement("labels", sql.Quote(m.Name)), sql.Quote(m.Value)))
