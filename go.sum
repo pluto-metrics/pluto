@@ -366,6 +366,8 @@ github.com/pluto-metrics/prometheus-ui-static v0.2.54-1.1 h1:zesx3+V3DDNwRGtjkOn
 github.com/pluto-metrics/prometheus-ui-static v0.2.54-1.1/go.mod h1:kk8noH+ULGqs9OL22eiuC/qQiYVCWMWkJeAJEN7JmE0=
 github.com/pluto-metrics/rowbinary v0.0.0-20241010075848-ea2705a5d54f h1:bhBTESE+WZSgEMj1vem/xRPWnRwsuQcxxTW1i3ZTX2o=
 github.com/pluto-metrics/rowbinary v0.0.0-20241010075848-ea2705a5d54f/go.mod h1:PnypiLMkgb6KkCPvz33oLE3KewFI27NtLw260Y6XSnc=
+github.com/pluto-metrics/rowbinary v0.0.0-20241010141531-0afbe148bf2d h1:wSI0D0qLRaRD6oUq5WxthBnb+6OlDbVgfmTwi+RD0L4=
+github.com/pluto-metrics/rowbinary v0.0.0-20241010141531-0afbe148bf2d/go.mod h1:PnypiLMkgb6KkCPvz33oLE3KewFI27NtLw260Y6XSnc=
 github.com/pmezard/go-difflib v1.0.0/go.mod h1:iKH77koFhYxTK1pcRnkKkqfTogsbg7gZNVY4sRDYZ/4=
 github.com/pmezard/go-difflib v1.0.1-0.20181226105442-5d4384ee4fb2 h1:Jamvg5psRIccs7FGNTlIRMkT8wgtp5eCXdBlqhYGL6U=
 github.com/pmezard/go-difflib v1.0.1-0.20181226105442-5d4384ee4fb2/go.mod h1:iKH77koFhYxTK1pcRnkKkqfTogsbg7gZNVY4sRDYZ/4=
