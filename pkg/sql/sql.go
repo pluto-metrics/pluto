@@ -29,3 +29,11 @@ func Lt(a, b string) string {
 func Lte(a, b string) string {
 	return fmt.Sprintf("%s <= %s", a, b)
 }
+
+func Not(a string) string {
+	return fmt.Sprintf("NOT %s", a)
+}
+
+func Match(a, b string) string {
+	return fmt.Sprintf("match(%s, %s)", a, b)
+}

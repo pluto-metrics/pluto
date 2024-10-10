@@ -16,9 +16,9 @@ func (q *Querier) whereMatchLabels(_ context.Context, where *sql.Where, matchers
 			case labels.MatchNotEqual:
 				where.And(sql.Ne(sql.Column("name"), sql.Quote(m.Value)))
 			case labels.MatchRegexp:
-				// @TODO
+				where.And(sql.Match(sql.Column("name"), sql.Quote("^"+m.Value+"$")))
 			case labels.MatchNotRegexp:
-				// @TODO
+				where.And(sql.Not(sql.Match(sql.Column("name"), sql.Quote("^"+m.Value+"$"))))
 			}
 			continue
 		}
@@ -29,9 +29,9 @@ func (q *Querier) whereMatchLabels(_ context.Context, where *sql.Where, matchers
 		case labels.MatchNotEqual:
 			where.And(sql.Ne(sql.ArrayElement("labels", sql.Quote(m.Name)), sql.Quote(m.Value)))
 		case labels.MatchRegexp:
-			// @TODO
+			where.And(sql.Match(sql.ArrayElement("labels", sql.Quote(m.Name)), sql.Quote("^"+m.Value+"$")))
 		case labels.MatchNotRegexp:
-			// @TODO
+			where.And(sql.Not(sql.Match(sql.ArrayElement("labels", sql.Quote(m.Name)), sql.Quote("^"+m.Value+"$"))))
 		}
 	}
 }
