@@ -32,7 +32,7 @@ func (q *Querier) Select(ctx context.Context, sortSeries bool, selectHints *stor
 		return newLabelsSeriesSet(slices.Collect(maps.Values(seriesMap)))
 	}
 
-	var step int64 = 60000 // 1 minute
+	var step int64 = 1000 // 1 second
 	if selectHints.Step != 0 {
 		step = selectHints.Step
 	}
@@ -47,19 +47,21 @@ func (q *Querier) Select(ctx context.Context, sortSeries bool, selectHints *stor
 	// fetch data by ids
 	// @TODO use external table
 	// @TODO use hashed id
-	// @TODO use step
 	qq, err := sql.Template(`
-		SELECT {{"id"|column}}, {{"timestamp"|column}}, {{"value"|column}}
+		SELECT id, min(timestamp), argMin(value, timestamp)
 		FROM {{.table}}
 		WHERE id IN ({{.ids}})
-			AND timestamp >= {{.start|quote}}
-			AND timestamp <= {{.end|quote}}
+			AND timestamp >= {{.start|quote}}-{{.step|quote}}-{{.lookbackDelta}}
+			AND timestamp <= {{.end|quote}}+{{.lookbackDelta}}
+		GROUP BY id, intDiv(timestamp-{{.start|quote}}, {{.step|quote}})
 		FORMAT RowBinary
 	`, map[string]interface{}{
-		"table": q.config.Select.TableSamples,
-		"start": selectHints.Start,
-		"end":   selectHints.End,
-		"ids":   ids.String(),
+		"table":         q.config.Select.TableSamples,
+		"start":         selectHints.Start,
+		"end":           selectHints.End,
+		"ids":           ids.String(),
+		"step":          step,
+		"lookbackDelta": q.config.Prometheus.LookbackDelta.Milliseconds(),
 	})
 
 	chRequest, err := q.request(ctx, qq)
