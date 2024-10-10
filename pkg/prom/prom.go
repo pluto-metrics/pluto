@@ -18,7 +18,7 @@ import (
 	"github.com/prometheus/prometheus/web/ui"
 	"go.uber.org/zap"
 
-	"github.com/pluto-metrics/pluto/cmd/pluto/config"
+	"github.com/pluto-metrics/pluto/pkg/config"
 	uiStatic "github.com/pluto-metrics/prometheus-ui-static"
 	"github.com/prometheus/common/assets"
 )

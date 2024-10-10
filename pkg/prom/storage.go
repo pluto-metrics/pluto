@@ -3,7 +3,7 @@ package prom
 import (
 	"context"
 
-	"github.com/pluto-metrics/pluto/cmd/pluto/config"
+	"github.com/pluto-metrics/pluto/pkg/config"
 	"github.com/prometheus/prometheus/storage"
 )
 

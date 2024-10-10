@@ -25,7 +25,7 @@ func TestRequestOK(t *testing.T) {
 	}))
 	defer ts.Close()
 
-	req, err := NewRequest(context.Background(), fmt.Sprintf("http://%s", ts.Listener.Addr().String()), Opts{
+	req, err := NewRequest(context.Background(), fmt.Sprintf("http://%s", ts.Listener.Addr().String()), nil, Opts{
 		HTTPClient: ts.Client(),
 	})
 	assert.NoError(err)
@@ -60,7 +60,7 @@ func TestRequestWithHeaders(t *testing.T) {
 	}))
 	defer ts.Close()
 
-	req, err := NewRequest(context.Background(), fmt.Sprintf("http://%s", ts.Listener.Addr().String()), Opts{
+	req, err := NewRequest(context.Background(), fmt.Sprintf("http://%s", ts.Listener.Addr().String()), nil, Opts{
 		Database:   "testdb",
 		HTTPClient: ts.Client(),
 		QueryID:    "query-id-test",
@@ -92,7 +92,7 @@ func TestRequestResponseStatusNotOK(t *testing.T) {
 	}))
 	defer ts.Close()
 
-	req, err := NewRequest(context.Background(), fmt.Sprintf("http://%s", ts.Listener.Addr().String()), Opts{
+	req, err := NewRequest(context.Background(), fmt.Sprintf("http://%s", ts.Listener.Addr().String()), nil, Opts{
 		HTTPClient: ts.Client(),
 	})
 	assert.NoError(err)
@@ -126,7 +126,7 @@ func TestRequestBadRequest(t *testing.T) {
 	}))
 	defer ts.Close()
 
-	req, err := NewRequest(context.Background(), fmt.Sprintf("http://"), Opts{
+	req, err := NewRequest(context.Background(), fmt.Sprintf("http://"), nil, Opts{
 		// Addr: ts.Listener.Addr().String(),
 		HTTPClient: ts.Client(),
 	})
@@ -158,7 +158,7 @@ func TestRequestAbortConnection(t *testing.T) {
 	}))
 	defer ts.Close()
 
-	req, err := NewRequest(context.Background(), fmt.Sprintf("http://%s", ts.Listener.Addr().String()), Opts{
+	req, err := NewRequest(context.Background(), fmt.Sprintf("http://%s", ts.Listener.Addr().String()), nil, Opts{
 		HTTPClient: ts.Client(),
 	})
 	assert.NoError(err)
@@ -214,7 +214,7 @@ func TestCancelByContext(t *testing.T) {
 	ctx, ctxCancel := context.WithTimeout(context.Background(), 200*time.Millisecond)
 	defer ctxCancel()
 
-	req, err := NewRequest(ctx, fmt.Sprintf("http://%s", ts.Listener.Addr().String()), Opts{
+	req, err := NewRequest(ctx, fmt.Sprintf("http://%s", ts.Listener.Addr().String()), nil, Opts{
 		// HTTPClient:     ts.Client(),
 	})
 	assert.NoError(err)

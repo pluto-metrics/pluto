@@ -6,6 +6,7 @@ import (
 	"net/http"
 
 	"github.com/golang/snappy"
+	"github.com/pluto-metrics/pluto/pkg/config"
 	"github.com/pluto-metrics/pluto/pkg/insert/id"
 	"github.com/pluto-metrics/pluto/pkg/insert/labels"
 	"github.com/pluto-metrics/pluto/pkg/query"
@@ -19,10 +20,9 @@ import (
 )
 
 type Opts struct {
-	ClickhouseDSN      string
-	ClickhouseDatabase string
-	ClickhouseTable    string
-	IDFunc             string
+	Clickhouse      config.ClickHouse
+	ClickhouseTable string
+	IDFunc          string
 }
 
 type PrometheusRemoteWrite struct {
@@ -56,9 +56,7 @@ func (rcv *PrometheusRemoteWrite) ServeHTTP(w http.ResponseWriter, r *http.Reque
 		return
 	}
 
-	chRequest, err := query.NewRequest(r.Context(), rcv.opts.ClickhouseDSN, query.Opts{
-		Database: rcv.opts.ClickhouseDatabase,
-	})
+	chRequest, err := query.NewRequest(r.Context(), rcv.opts.Clickhouse.DSN, rcv.opts.Clickhouse.Params, query.Opts{})
 	if err != nil {
 		zap.L().Error("can't create request to clickhouse", zap.Error(err))
 		http.Error(w, err.Error(), http.StatusBadGateway)

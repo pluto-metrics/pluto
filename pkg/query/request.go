@@ -7,6 +7,7 @@ import (
 	"io"
 	"net/http"
 	"net/url"
+	"strings"
 	"sync"
 
 	"github.com/pkg/errors"
@@ -49,7 +50,7 @@ type Response struct {
 }
 
 // New начинает отправлять запрос в КХ
-func NewRequest(ctx context.Context, dsn string, opts Opts) (*Request, error) {
+func NewRequest(ctx context.Context, dsn string, params map[string]string, opts Opts) (*Request, error) {
 	u, err := url.Parse(dsn)
 	if err != nil {
 		return nil, err
@@ -82,13 +83,31 @@ func NewRequest(ctx context.Context, dsn string, opts Opts) (*Request, error) {
 		Scheme: u.Scheme,
 		Host:   u.Host,
 	}
-
+	values := url.Query()
 	headers := http.Header{}
+
+	uv := u.Query()
+	// params from dsn
+	for k := range uv {
+		values.Set(k, uv.Get(k))
+	}
+
+	// params from separate config
+	for k, v := range params {
+		if strings.HasPrefix(strings.ToLower(k), "x-clickhouse-") {
+			headers.Set(k, v)
+		} else {
+			values.Set(k, v)
+		}
+	}
+
 	headers.Set(headerUserAgent, clientName)
 	headers.Set(headerDatabase, opts.Database)
 	if len(opts.QueryID) > 0 {
 		headers.Set(headerClickhouseQueryID, opts.QueryID)
 	}
+
+	url.RawQuery = values.Encode()
 
 	httpReq := (&http.Request{
 		Method:           "POST",

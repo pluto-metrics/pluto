@@ -6,7 +6,7 @@ import (
 	"log"
 	"net/http/pprof"
 
-	"github.com/pluto-metrics/pluto/cmd/pluto/config"
+	"github.com/pluto-metrics/pluto/pkg/config"
 	"github.com/pluto-metrics/pluto/pkg/insert"
 	"github.com/pluto-metrics/pluto/pkg/listen"
 	"github.com/pluto-metrics/pluto/pkg/prom"
@@ -39,10 +39,9 @@ func main() {
 	if cfg.Insert.Enabled {
 		mux := httpManager.Mux(cfg.Insert.Listen)
 		rw := insert.NewPrometheusRemoteWrite(insert.Opts{
-			ClickhouseDSN:      cfg.ClickHouse.DSN,
-			ClickhouseDatabase: cfg.ClickHouse.Database,
-			ClickhouseTable:    cfg.Insert.Table,
-			IDFunc:             cfg.Insert.IDFunc,
+			Clickhouse:      cfg.ClickHouse,
+			ClickhouseTable: cfg.Insert.Table,
+			IDFunc:          cfg.Insert.IDFunc,
 		})
 
 		mux.Handle("/api/v1/write", rw)

@@ -10,7 +10,6 @@ require (
 	github.com/golang/snappy v0.0.4
 	github.com/grafana/regexp v0.0.0-20240518133315-a468a5bfb3bc
 	github.com/jinzhu/configor v1.2.2
-	github.com/mcuadros/go-defaults v1.2.0
 	github.com/pkg/errors v0.9.1
 	github.com/pluto-metrics/prometheus-ui-static v0.2.54-1.1
 	github.com/pluto-metrics/rowbinary v0.0.0-20241010075848-ea2705a5d54f
