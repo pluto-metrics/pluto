@@ -60,8 +60,7 @@ func TestRequestWithHeaders(t *testing.T) {
 	}))
 	defer ts.Close()
 
-	req, err := NewRequest(context.Background(), fmt.Sprintf("http://%s", ts.Listener.Addr().String()), nil, Opts{
-		Database:   "testdb",
+	req, err := NewRequest(context.Background(), fmt.Sprintf("http://%s", ts.Listener.Addr().String()), map[string]string{"X-ClickHouse-Database": "testdb"}, Opts{
 		HTTPClient: ts.Client(),
 		QueryID:    "query-id-test",
 	})
