@@ -9,6 +9,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/pluto-metrics/pluto/pkg/config"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -25,9 +26,12 @@ func TestRequestOK(t *testing.T) {
 	}))
 	defer ts.Close()
 
-	req, err := NewRequest(context.Background(), fmt.Sprintf("http://%s", ts.Listener.Addr().String()), nil, Opts{
-		HTTPClient: ts.Client(),
-	})
+	req, err := NewRequest(context.Background(),
+		config.ClickHouse{
+			DSN: fmt.Sprintf("http://%s", ts.Listener.Addr().String())},
+		Opts{
+			HTTPClient: ts.Client(),
+		})
 	assert.NoError(err)
 	defer req.Close()
 
@@ -60,10 +64,16 @@ func TestRequestWithHeaders(t *testing.T) {
 	}))
 	defer ts.Close()
 
-	req, err := NewRequest(context.Background(), fmt.Sprintf("http://%s", ts.Listener.Addr().String()), map[string]string{"X-ClickHouse-Database": "testdb"}, Opts{
-		HTTPClient: ts.Client(),
-		QueryID:    "query-id-test",
-	})
+	req, err := NewRequest(
+		context.Background(),
+		config.ClickHouse{
+			DSN:    fmt.Sprintf("http://%s", ts.Listener.Addr().String()),
+			Params: map[string]string{"X-ClickHouse-Database": "testdb"},
+		},
+		Opts{
+			HTTPClient: ts.Client(),
+			QueryID:    "query-id-test",
+		})
 	assert.NoError(err)
 	defer req.Close()
 
@@ -91,9 +101,11 @@ func TestRequestResponseStatusNotOK(t *testing.T) {
 	}))
 	defer ts.Close()
 
-	req, err := NewRequest(context.Background(), fmt.Sprintf("http://%s", ts.Listener.Addr().String()), nil, Opts{
-		HTTPClient: ts.Client(),
-	})
+	req, err := NewRequest(context.Background(),
+		config.ClickHouse{DSN: fmt.Sprintf("http://%s", ts.Listener.Addr().String())},
+		Opts{
+			HTTPClient: ts.Client(),
+		})
 	assert.NoError(err)
 	defer req.Close()
 
@@ -125,10 +137,13 @@ func TestRequestBadRequest(t *testing.T) {
 	}))
 	defer ts.Close()
 
-	req, err := NewRequest(context.Background(), fmt.Sprintf("http://"), nil, Opts{
-		// Addr: ts.Listener.Addr().String(),
-		HTTPClient: ts.Client(),
-	})
+	req, err := NewRequest(context.Background(), config.ClickHouse{
+		DSN: fmt.Sprintf("http://"),
+	},
+		Opts{
+			// Addr: ts.Listener.Addr().String(),
+			HTTPClient: ts.Client(),
+		})
 	assert.NoError(err)
 	defer req.Close()
 
@@ -157,9 +172,11 @@ func TestRequestAbortConnection(t *testing.T) {
 	}))
 	defer ts.Close()
 
-	req, err := NewRequest(context.Background(), fmt.Sprintf("http://%s", ts.Listener.Addr().String()), nil, Opts{
-		HTTPClient: ts.Client(),
-	})
+	req, err := NewRequest(context.Background(),
+		config.ClickHouse{DSN: fmt.Sprintf("http://%s", ts.Listener.Addr().String())},
+		Opts{
+			HTTPClient: ts.Client(),
+		})
 	assert.NoError(err)
 	defer req.Close()
 
@@ -213,9 +230,13 @@ func TestCancelByContext(t *testing.T) {
 	ctx, ctxCancel := context.WithTimeout(context.Background(), 200*time.Millisecond)
 	defer ctxCancel()
 
-	req, err := NewRequest(ctx, fmt.Sprintf("http://%s", ts.Listener.Addr().String()), nil, Opts{
-		// HTTPClient:     ts.Client(),
-	})
+	req, err := NewRequest(ctx,
+		config.ClickHouse{
+			DSN: fmt.Sprintf("http://%s", ts.Listener.Addr().String()),
+		},
+		Opts{
+			// HTTPClient:     ts.Client(),
+		})
 	assert.NoError(err)
 	defer req.Close()
 

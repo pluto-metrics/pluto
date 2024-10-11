@@ -56,7 +56,7 @@ func (rcv *PrometheusRemoteWrite) ServeHTTP(w http.ResponseWriter, r *http.Reque
 		return
 	}
 
-	chRequest, err := query.NewRequest(r.Context(), rcv.opts.Clickhouse.DSN, rcv.opts.Clickhouse.Params, query.Opts{})
+	chRequest, err := query.NewRequest(r.Context(), rcv.opts.Clickhouse, query.Opts{})
 	if err != nil {
 		zap.L().Error("can't create request to clickhouse", zap.Error(err))
 		http.Error(w, err.Error(), http.StatusBadGateway)

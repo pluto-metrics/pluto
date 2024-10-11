@@ -50,7 +50,6 @@ func (q *Querier) Select(ctx context.Context, sortSeries bool, selectHints *stor
 
 	// fetch data by ids
 	// @TODO use external table
-	// @TODO use hashed id
 	qq, err := sql.Template(`
 		SELECT {{.id_hash}} as id_hash, min(timestamp), argMin(value, timestamp)
 		FROM {{.table}}

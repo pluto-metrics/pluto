@@ -11,6 +11,7 @@ import (
 	"sync"
 
 	"github.com/pkg/errors"
+	"github.com/pluto-metrics/pluto/pkg/config"
 )
 
 const (
@@ -25,6 +26,7 @@ type Opts struct {
 	BufferSize int
 	HTTPClient *http.Client
 	QueryID    string
+	Headers    map[string]string
 }
 
 // Request ...
@@ -47,8 +49,8 @@ type Response struct {
 }
 
 // New начинает отправлять запрос в КХ
-func NewRequest(ctx context.Context, dsn string, params map[string]string, opts Opts) (*Request, error) {
-	u, err := url.Parse(dsn)
+func NewRequest(ctx context.Context, cfg config.ClickHouse, opts Opts) (*Request, error) {
+	u, err := url.Parse(cfg.DSN)
 	if err != nil {
 		return nil, err
 	}
@@ -79,17 +81,20 @@ func NewRequest(ctx context.Context, dsn string, params map[string]string, opts 
 	}
 	values := url.Query()
 	headers := http.Header{}
+	headers.Set(headerUserAgent, clientName)
 
 	uv := u.Query()
 	// params from dsn
 	for k := range uv {
-		values.Set(k, uv.Get(k))
+		if strings.HasPrefix(strings.ToLower(k), "x-clickhouse-") {
+			headers.Set(k, uv.Get(k))
+		} else {
+			values.Set(k, uv.Get(k))
+		}
 	}
 
-	headers.Set(headerUserAgent, clientName)
-
 	// params from separate config
-	for k, v := range params {
+	for k, v := range cfg.Params {
 		if strings.HasPrefix(strings.ToLower(k), "x-clickhouse-") {
 			headers.Set(k, v)
 		} else {
@@ -99,6 +104,10 @@ func NewRequest(ctx context.Context, dsn string, params map[string]string, opts 
 
 	if len(opts.QueryID) > 0 {
 		headers.Set(headerClickhouseQueryID, opts.QueryID)
+	}
+
+	for k, v := range opts.Headers {
+		headers.Set(k, v)
 	}
 
 	url.RawQuery = values.Encode()

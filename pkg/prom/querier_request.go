@@ -9,7 +9,7 @@ import (
 )
 
 func (q *Querier) request(ctx context.Context, qq string) (*query.Request, error) {
-	chRequest, err := query.NewRequest(ctx, q.config.ClickHouse.DSN, q.config.ClickHouse.Params, query.Opts{})
+	chRequest, err := query.NewRequest(ctx, q.config.ClickHouse, query.Opts{})
 	if err != nil {
 		zap.L().Error("can't create request to clickhouse", zap.Error(err))
 		return nil, err
