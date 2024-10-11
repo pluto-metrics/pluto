@@ -58,7 +58,10 @@ func (rcv *PrometheusRemoteWrite) ServeHTTP(w http.ResponseWriter, r *http.Reque
 
 	qq := fmt.Sprintf("INSERT INTO %s FORMAT RowBinaryWithNamesAndTypes\n", rcv.opts.ClickhouseTable)
 
-	ctx := query.Log(r.Context(), zap.L().With(zap.String("query", query.Format(qq))))
+	ctx := query.Log(r.Context(), zap.L().With(
+		zap.String("query", query.Format(qq)),
+		zap.String("kind", "insert"),
+	))
 
 	chRequest, err := query.NewRequest(ctx, rcv.opts.Clickhouse, query.Opts{})
 	if err != nil {

@@ -15,6 +15,7 @@ var loggerContextKey contextKey = "queryLogger"
 type typeLoggerContainer struct {
 	sync.Mutex
 	logger *zap.Logger
+	sync.Once
 }
 
 func Log(ctx context.Context, logger *zap.Logger) context.Context {
@@ -46,15 +47,17 @@ func loggerFromContext(ctx context.Context) *zap.Logger {
 	return nil
 }
 
-func logQueryFinished(ctx context.Context, err error) {
-	l := loggerFromContext(ctx)
+func logQueryFinished(ctx context.Context) {
+	l := ctx.Value(loggerContextKey)
 	if l == nil {
 		return
 	}
-	if err != nil {
-		l.Error("query failed", zap.Error(err))
-	} else {
-		l.Debug("query success")
+	if c, ok := l.(*typeLoggerContainer); ok && c != nil {
+		c.Lock()
+		c.Once.Do(func() {
+			c.logger.Debug("query")
+		})
+		c.Unlock()
 	}
 }
 

@@ -61,7 +61,10 @@ func (q *Querier) Select(ctx context.Context, sortSeries bool, selectHints *stor
 		"lookbackDelta": q.config.Prometheus.LookbackDelta.Milliseconds(),
 	})
 
-	ctx = query.Log(ctx, zap.L().With(zap.String("query", query.Format(qq))))
+	ctx = query.Log(ctx, zap.L().With(
+		zap.String("query", query.Format(qq)),
+		zap.String("kind", "select"),
+	))
 
 	reqBuf := new(bytes.Buffer)
 	reqWriter := multipart.NewWriter(reqBuf)
@@ -87,6 +90,8 @@ func (q *Querier) Select(ctx context.Context, sortSeries bool, selectHints *stor
 	if err != nil {
 		return createErr(err)
 	}
+
+	query.LogWith(ctx, zap.Int("ids", len(seriesMap)))
 
 	for k := range seriesMap {
 		if err = rowbinary.String.Write(idsWriter, k); err != nil {

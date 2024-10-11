@@ -182,6 +182,8 @@ func (req *Request) Close() error {
 	resp := req.resp
 	req.Unlock()
 
+	logQueryFinished(req.ctx)
+
 	if err != nil {
 		return err
 	}
@@ -201,10 +203,8 @@ func (req *Request) Finish() (*Response, error) {
 		respErr := req.respErr
 		req.Unlock()
 		if respErr != nil {
-			logQueryFinished(req.ctx, respErr)
 			return nil, errors.WithStack(respErr)
 		}
-		logQueryFinished(req.ctx, err)
 		return nil, errors.WithStack(err)
 	}
 	if err := req.writer.Close(); err != nil {
@@ -213,10 +213,8 @@ func (req *Request) Finish() (*Response, error) {
 		respErr := req.respErr
 		req.Unlock()
 		if respErr != nil {
-			logQueryFinished(req.ctx, respErr)
 			return nil, errors.WithStack(respErr)
 		}
-		logQueryFinished(req.ctx, err)
 		return nil, errors.WithStack(err)
 	}
 
@@ -228,7 +226,7 @@ func (req *Request) Finish() (*Response, error) {
 	req.Unlock()
 
 	if err != nil {
-		logQueryFinished(req.ctx, err)
+		logQueryFinished(req.ctx)
 	}
 
 	return resp, err
@@ -245,6 +243,6 @@ func (resp *Response) Read(p []byte) (int, error) {
 // Close вычитывает остатки из body
 func (resp *Response) Close() error {
 	_, err := io.Copy(io.Discard, resp.httpBody)
-	logQueryFinished(resp.ctx, nil)
+	logQueryFinished(resp.ctx)
 	return err
 }
