@@ -15,16 +15,13 @@ import (
 
 const (
 	headerClickhouseQueryID = "X-ClickHouse-Query-Id"
-	headerDatabase          = "X-ClickHouse-Database"
 	headerUserAgent         = "User-Agent"
 	clientName              = "pluto/v0.1.0"
 	defaultUser             = "default"
-	defaultDatabase         = "default"
 )
 
 // Opts ...
 type Opts struct {
-	Database   string
 	BufferSize int
 	HTTPClient *http.Client
 	QueryID    string
@@ -60,9 +57,6 @@ func NewRequest(ctx context.Context, dsn string, params map[string]string, opts 
 	if opts.BufferSize < 1024*1024 {
 		opts.BufferSize = 1024 * 1024
 	}
-	if opts.Database == "" {
-		opts.Database = defaultDatabase
-	}
 
 	reader, writer := io.Pipe()
 
@@ -92,6 +86,8 @@ func NewRequest(ctx context.Context, dsn string, params map[string]string, opts 
 		values.Set(k, uv.Get(k))
 	}
 
+	headers.Set(headerUserAgent, clientName)
+
 	// params from separate config
 	for k, v := range params {
 		if strings.HasPrefix(strings.ToLower(k), "x-clickhouse-") {
@@ -101,8 +97,6 @@ func NewRequest(ctx context.Context, dsn string, params map[string]string, opts 
 		}
 	}
 
-	headers.Set(headerUserAgent, clientName)
-	headers.Set(headerDatabase, opts.Database)
 	if len(opts.QueryID) > 0 {
 		headers.Set(headerClickhouseQueryID, opts.QueryID)
 	}
