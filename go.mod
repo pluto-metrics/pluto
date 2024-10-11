@@ -5,12 +5,12 @@ go 1.23.1
 toolchain go1.23.2
 
 require (
+	github.com/OneOfOne/xxhash v1.2.8
 	github.com/go-playground/validator/v10 v10.22.1
 	github.com/gogo/protobuf v1.3.2
 	github.com/golang/snappy v0.0.4
 	github.com/grafana/regexp v0.0.0-20240518133315-a468a5bfb3bc
 	github.com/jinzhu/configor v1.2.2
-	github.com/k0kubun/pp v3.0.1+incompatible
 	github.com/pkg/errors v0.9.1
 	github.com/pluto-metrics/prometheus-ui-static v0.2.54-1.1
 	github.com/pluto-metrics/rowbinary v0.0.0-20241010141531-0afbe148bf2d
@@ -64,13 +64,10 @@ require (
 	github.com/jpillora/backoff v1.0.0 // indirect
 	github.com/json-iterator/go v1.1.12 // indirect
 	github.com/julienschmidt/httprouter v1.3.0 // indirect
-	github.com/k0kubun/colorstring v0.0.0-20150214042306-9440f1994b88 // indirect
 	github.com/klauspost/compress v1.17.9 // indirect
 	github.com/kylelemons/godebug v1.1.0 // indirect
 	github.com/leodido/go-urn v1.4.0 // indirect
 	github.com/mailru/easyjson v0.7.7 // indirect
-	github.com/mattn/go-colorable v0.1.13 // indirect
-	github.com/mattn/go-isatty v0.0.20 // indirect
 	github.com/mitchellh/mapstructure v1.5.0 // indirect
 	github.com/modern-go/concurrent v0.0.0-20180306012644-bacd9c7ef1dd // indirect
 	github.com/modern-go/reflect2 v1.0.2 // indirect

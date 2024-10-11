@@ -44,18 +44,23 @@ func (q *Querier) Select(ctx context.Context, sortSeries bool, selectHints *stor
 		}
 		ids.WriteString(sql.Quote(k))
 	}
+
+	// don't fetch full ids, use hash
+	unhash := NewHashSelector(maps.Keys(seriesMap))
+
 	// fetch data by ids
 	// @TODO use external table
 	// @TODO use hashed id
 	qq, err := sql.Template(`
-		SELECT id, min(timestamp), argMin(value, timestamp)
+		SELECT {{.id_hash}} as id_hash, min(timestamp), argMin(value, timestamp)
 		FROM {{.table}}
 		WHERE id IN ({{.ids}})
 			AND timestamp >= {{.start|quote}}-{{.step|quote}}-{{.lookbackDelta}}
 			AND timestamp <= {{.end|quote}}+{{.lookbackDelta}}
-		GROUP BY id, intDiv(timestamp-{{.start|quote}}, {{.step|quote}})
+		GROUP BY id_hash, intDiv(timestamp-{{.start|quote}}, {{.step|quote}})
 		FORMAT RowBinary
 	`, map[string]interface{}{
+		"id_hash":       unhash.SelectColumn("id"),
 		"table":         q.config.Select.TableSamples,
 		"start":         selectHints.Start,
 		"end":           selectHints.End,
@@ -90,12 +95,12 @@ func (q *Querier) Select(ctx context.Context, sortSeries bool, selectHints *stor
 
 	r := schema.NewReader(bufio.NewReader(chResponse)).
 		Format(schema.RowBinary).
-		Column(rowbinary.String). // id
-		Column(rowbinary.Int64).  // timestamp
-		Column(rowbinary.Float64) // value
+		Column(unhash.ColumnType()). // id
+		Column(rowbinary.Int64).     // timestamp
+		Column(rowbinary.Float64)    // value
 
 	for r.Next() {
-		id, _ := schema.Read(r, rowbinary.String)
+		id, _ := unhash.SchemaRead(r)
 		timestamp, _ := schema.Read(r, rowbinary.Int64)
 		value, _ := schema.Read(r, rowbinary.Float64)
 		if r.Err() != nil {
