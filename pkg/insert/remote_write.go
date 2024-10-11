@@ -56,7 +56,11 @@ func (rcv *PrometheusRemoteWrite) ServeHTTP(w http.ResponseWriter, r *http.Reque
 		return
 	}
 
-	chRequest, err := query.NewRequest(r.Context(), rcv.opts.Clickhouse, query.Opts{})
+	qq := fmt.Sprintf("INSERT INTO %s FORMAT RowBinaryWithNamesAndTypes\n", rcv.opts.ClickhouseTable)
+
+	ctx := query.Log(r.Context(), zap.L().With(zap.String("query", query.Format(qq))))
+
+	chRequest, err := query.NewRequest(ctx, rcv.opts.Clickhouse, query.Opts{})
 	if err != nil {
 		zap.L().Error("can't create request to clickhouse", zap.Error(err))
 		http.Error(w, err.Error(), http.StatusBadGateway)
@@ -65,7 +69,7 @@ func (rcv *PrometheusRemoteWrite) ServeHTTP(w http.ResponseWriter, r *http.Reque
 
 	defer chRequest.Close()
 
-	_, err = fmt.Fprintf(chRequest, "INSERT INTO %s FORMAT RowBinaryWithNamesAndTypes\n", rcv.opts.ClickhouseTable)
+	_, err = fmt.Fprint(chRequest, qq)
 	if err != nil {
 		zap.L().Error("can't write query to clickhouse", zap.Error(err))
 		http.Error(w, err.Error(), http.StatusBadGateway)

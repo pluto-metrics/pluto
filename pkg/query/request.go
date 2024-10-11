@@ -45,6 +45,7 @@ type Request struct {
 
 // Response ...
 type Response struct {
+	ctx      context.Context
 	httpBody io.ReadCloser
 }
 
@@ -158,7 +159,7 @@ func NewRequest(ctx context.Context, cfg config.ClickHouse, opts Opts) (*Request
 		}
 
 		req.Lock()
-		req.resp = &Response{httpBody: httpResp.Body}
+		req.resp = &Response{ctx: ctx, httpBody: httpResp.Body}
 		req.Unlock()
 	}()
 
@@ -200,8 +201,10 @@ func (req *Request) Finish() (*Response, error) {
 		respErr := req.respErr
 		req.Unlock()
 		if respErr != nil {
+			logQueryFinished(req.ctx, respErr)
 			return nil, errors.WithStack(respErr)
 		}
+		logQueryFinished(req.ctx, err)
 		return nil, errors.WithStack(err)
 	}
 	if err := req.writer.Close(); err != nil {
@@ -210,8 +213,10 @@ func (req *Request) Finish() (*Response, error) {
 		respErr := req.respErr
 		req.Unlock()
 		if respErr != nil {
+			logQueryFinished(req.ctx, respErr)
 			return nil, errors.WithStack(respErr)
 		}
+		logQueryFinished(req.ctx, err)
 		return nil, errors.WithStack(err)
 	}
 
@@ -221,6 +226,10 @@ func (req *Request) Finish() (*Response, error) {
 	err := req.respErr
 	resp := req.resp
 	req.Unlock()
+
+	if err != nil {
+		logQueryFinished(req.ctx, err)
+	}
 
 	return resp, err
 }
@@ -236,5 +245,6 @@ func (resp *Response) Read(p []byte) (int, error) {
 // Close вычитывает остатки из body
 func (resp *Response) Close() error {
 	_, err := io.Copy(io.Discard, resp.httpBody)
+	logQueryFinished(resp.ctx, nil)
 	return err
 }

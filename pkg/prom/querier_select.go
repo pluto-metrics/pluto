@@ -61,6 +61,8 @@ func (q *Querier) Select(ctx context.Context, sortSeries bool, selectHints *stor
 		"lookbackDelta": q.config.Prometheus.LookbackDelta.Milliseconds(),
 	})
 
+	ctx = query.Log(ctx, zap.L().With(zap.String("query", query.Format(qq))))
+
 	reqBuf := new(bytes.Buffer)
 	reqWriter := multipart.NewWriter(reqBuf)
 
