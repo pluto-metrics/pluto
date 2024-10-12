@@ -198,8 +198,6 @@ func (req *Request) Close() error {
 	resp := req.resp
 	req.Unlock()
 
-	scope.QueryFinish(req.ctx)
-
 	if err != nil {
 		return err
 	}
@@ -243,10 +241,6 @@ func (req *Request) Finish() (*Response, error) {
 	resp := req.resp
 	req.Unlock()
 
-	if err != nil {
-		scope.QueryFinish(req.ctx)
-	}
-
 	return resp, err
 }
 
@@ -266,6 +260,5 @@ func (resp *Response) Read(p []byte) (int, error) {
 func (resp *Response) Close() error {
 	_, err := io.Copy(io.Discard, resp)
 	scope.QueryWith(resp.ctx, zap.Int("resp_body_bytes", resp.vars.respBodyBytes))
-	scope.QueryFinish(resp.ctx)
 	return err
 }

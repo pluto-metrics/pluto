@@ -33,6 +33,7 @@ func (q *Querier) lookup(ctx context.Context, start, end int64, matchers []*labe
 
 	ctx = scope.QueryBegin(ctx)
 	scope.QueryWith(ctx, zap.String("query", qq))
+	defer scope.QueryFinish(ctx)
 
 	chRequest, err := q.request(ctx, qq)
 	if err != nil {

@@ -4,6 +4,7 @@ import (
 	"bufio"
 	"context"
 
+	"github.com/pluto-metrics/pluto/pkg/scope"
 	"github.com/pluto-metrics/pluto/pkg/sql"
 	"github.com/pluto-metrics/rowbinary"
 	"github.com/pluto-metrics/rowbinary/schema"
@@ -39,6 +40,10 @@ func (q *Querier) LabelNames(ctx context.Context, hints *storage.LabelHints, mat
 	if err != nil {
 		return nil, nil, err
 	}
+
+	ctx = scope.QueryBegin(ctx)
+	scope.QueryWith(ctx, zap.String("query", qq))
+	defer scope.QueryFinish(ctx)
 
 	chRequest, err := q.request(ctx, qq)
 	if err != nil {

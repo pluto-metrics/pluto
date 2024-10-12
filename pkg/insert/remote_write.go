@@ -61,6 +61,7 @@ func (rcv *PrometheusRemoteWrite) ServeHTTP(w http.ResponseWriter, r *http.Reque
 
 	ctx := scope.QueryBegin(r.Context())
 	scope.QueryWith(ctx, zap.String("query", qq))
+	defer scope.QueryFinish(ctx)
 
 	chRequest, err := query.NewRequest(ctx, rcv.opts.Clickhouse, query.Opts{})
 	if err != nil {

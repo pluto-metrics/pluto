@@ -64,6 +64,7 @@ func (q *Querier) Select(ctx context.Context, sortSeries bool, selectHints *stor
 
 	ctx = scope.QueryBegin(ctx)
 	scope.QueryWith(ctx, zap.String("query", qq))
+	defer scope.QueryFinish(ctx)
 
 	reqBuf := new(bytes.Buffer)
 	reqWriter := multipart.NewWriter(reqBuf)
