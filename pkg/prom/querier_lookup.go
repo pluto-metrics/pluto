@@ -4,6 +4,7 @@ import (
 	"bufio"
 	"context"
 
+	"github.com/pluto-metrics/pluto/pkg/scope"
 	"github.com/pluto-metrics/pluto/pkg/sql"
 	"github.com/pluto-metrics/rowbinary"
 	"github.com/pluto-metrics/rowbinary/schema"
@@ -29,6 +30,10 @@ func (q *Querier) lookup(ctx context.Context, start, end int64, matchers []*labe
 	if err != nil {
 		return nil, err
 	}
+
+	ctx = scope.QueryBegin(ctx)
+	scope.QueryWith(ctx, zap.String("query", qq))
+
 	chRequest, err := q.request(ctx, qq)
 	if err != nil {
 		return nil, err

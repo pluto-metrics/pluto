@@ -3,14 +3,17 @@ package config
 import (
 	"time"
 
+	"github.com/Knetic/govaluate"
 	"github.com/go-playground/validator/v10"
 	"github.com/jinzhu/configor"
 	"go.uber.org/zap"
 )
 
 type ClickHouse struct {
-	DSN    string            `yaml:"dsn" validate:"uri" default:"http://127.0.0.1:8123/?async_insert=1&wait_for_async_insert=1"`
-	Params map[string]string `yaml:"params"`
+	DSN          string                         `yaml:"dsn" validate:"uri" default:"http://127.0.0.1:8123/?async_insert=1&wait_for_async_insert=1"`
+	Params       map[string]string              `yaml:"params"`
+	QueryLog     string                         `yaml:"query_log" default:"kind != 'insert'"`
+	QueryLogExpr *govaluate.EvaluableExpression `yaml:"-"`
 }
 
 type Config struct {
@@ -63,6 +66,12 @@ func LoadFromFile(filename string, development bool) (*Config, error) {
 	if err := validator.New(validator.WithRequiredStructEnabled()).Struct(cfg); err != nil {
 		return nil, err
 	}
+
+	expr, err := govaluate.NewEvaluableExpression(cfg.ClickHouse.QueryLog)
+	if err != nil {
+		return nil, err
+	}
+	cfg.ClickHouse.QueryLogExpr = expr
 
 	return &cfg, nil
 }

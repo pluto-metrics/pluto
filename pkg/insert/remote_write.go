@@ -10,6 +10,7 @@ import (
 	"github.com/pluto-metrics/pluto/pkg/insert/id"
 	"github.com/pluto-metrics/pluto/pkg/insert/labels"
 	"github.com/pluto-metrics/pluto/pkg/query"
+	"github.com/pluto-metrics/pluto/pkg/scope"
 	"github.com/pluto-metrics/rowbinary"
 	"github.com/pluto-metrics/rowbinary/schema"
 	"github.com/prometheus/prometheus/prompb"
@@ -58,10 +59,8 @@ func (rcv *PrometheusRemoteWrite) ServeHTTP(w http.ResponseWriter, r *http.Reque
 
 	qq := fmt.Sprintf("INSERT INTO %s FORMAT RowBinaryWithNamesAndTypes\n", rcv.opts.ClickhouseTable)
 
-	ctx := query.Log(r.Context(), zap.L().With(
-		zap.String("query", query.Format(qq)),
-		zap.String("kind", "insert"),
-	))
+	ctx := scope.QueryBegin(r.Context())
+	scope.QueryWith(ctx, zap.String("query", qq))
 
 	chRequest, err := query.NewRequest(ctx, rcv.opts.Clickhouse, query.Opts{})
 	if err != nil {

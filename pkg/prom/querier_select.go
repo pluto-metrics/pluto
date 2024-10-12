@@ -11,6 +11,7 @@ import (
 	"time"
 
 	"github.com/pluto-metrics/pluto/pkg/query"
+	"github.com/pluto-metrics/pluto/pkg/scope"
 	"github.com/pluto-metrics/pluto/pkg/sql"
 	"github.com/pluto-metrics/rowbinary"
 	"github.com/pluto-metrics/rowbinary/schema"
@@ -61,10 +62,8 @@ func (q *Querier) Select(ctx context.Context, sortSeries bool, selectHints *stor
 		"lookbackDelta": q.config.Prometheus.LookbackDelta.Milliseconds(),
 	})
 
-	ctx = query.Log(ctx, zap.L().With(
-		zap.String("query", query.Format(qq)),
-		zap.String("kind", "select"),
-	))
+	ctx = scope.QueryBegin(ctx)
+	scope.QueryWith(ctx, zap.String("query", qq))
 
 	reqBuf := new(bytes.Buffer)
 	reqWriter := multipart.NewWriter(reqBuf)
@@ -91,7 +90,7 @@ func (q *Querier) Select(ctx context.Context, sortSeries bool, selectHints *stor
 		return createErr(err)
 	}
 
-	query.LogWith(ctx, zap.Int("ids", len(seriesMap)))
+	scope.QueryWith(ctx, zap.Int("ids", len(seriesMap)))
 
 	for k := range seriesMap {
 		if err = rowbinary.String.Write(idsWriter, k); err != nil {

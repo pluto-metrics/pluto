@@ -12,6 +12,8 @@ import (
 
 	"github.com/pkg/errors"
 	"github.com/pluto-metrics/pluto/pkg/config"
+	"github.com/pluto-metrics/pluto/pkg/scope"
+	"go.uber.org/zap"
 )
 
 const (
@@ -41,16 +43,26 @@ type Request struct {
 	finished chan interface{}
 	respErr  error     // read/write with mutexs
 	resp     *Response // read/write with mutex
+
+	vars struct {
+		reqBodyBytes int
+	}
 }
 
 // Response ...
 type Response struct {
 	ctx      context.Context
 	httpBody io.ReadCloser
+
+	vars struct {
+		respBodyBytes int
+	}
 }
 
 // New начинает отправлять запрос в КХ
 func NewRequest(ctx context.Context, cfg config.ClickHouse, opts Opts) (*Request, error) {
+	scope.QuerySetClickhouseConfig(ctx, &cfg)
+
 	u, err := url.Parse(cfg.DSN)
 	if err != nil {
 		return nil, err
@@ -144,6 +156,8 @@ func NewRequest(ctx context.Context, cfg config.ClickHouse, opts Opts) (*Request
 			return
 		}
 
+		scope.QuerySetClickhouseSummary(ctx, httpResp.Header.Get("X-Clickhouse-Summary"))
+
 		if httpResp.StatusCode != http.StatusOK {
 			body, bodyErr := io.ReadAll(httpResp.Body)
 
@@ -168,7 +182,9 @@ func NewRequest(ctx context.Context, cfg config.ClickHouse, opts Opts) (*Request
 
 // Write пишет данные на отправку
 func (req *Request) Write(p []byte) (int, error) {
-	return req.writerBuf.Write(p)
+	n, err := req.writerBuf.Write(p)
+	req.vars.reqBodyBytes += n
+	return n, err
 }
 
 // Close прекращает запрос (если он еще не завершился), высвобождает ресурсы
@@ -182,7 +198,7 @@ func (req *Request) Close() error {
 	resp := req.resp
 	req.Unlock()
 
-	logQueryFinished(req.ctx)
+	scope.QueryFinish(req.ctx)
 
 	if err != nil {
 		return err
@@ -197,6 +213,8 @@ func (req *Request) Close() error {
 
 // Finish завершает запрос и начинает вычитывать ответ
 func (req *Request) Finish() (*Response, error) {
+	scope.QueryWith(req.ctx, zap.Int("req_body_bytes", req.vars.reqBodyBytes))
+
 	if err := req.writerBuf.Flush(); err != nil {
 		// возможно есть ошибка от сервера
 		req.Lock()
@@ -226,7 +244,7 @@ func (req *Request) Finish() (*Response, error) {
 	req.Unlock()
 
 	if err != nil {
-		logQueryFinished(req.ctx)
+		scope.QueryFinish(req.ctx)
 	}
 
 	return resp, err
@@ -237,12 +255,17 @@ func (resp *Response) Read(p []byte) (int, error) {
 	if resp == nil {
 		return 0, fmt.Errorf("response is nil")
 	}
-	return resp.httpBody.Read(p)
+	n, err := resp.httpBody.Read(p)
+
+	resp.vars.respBodyBytes += n
+
+	return n, err
 }
 
 // Close вычитывает остатки из body
 func (resp *Response) Close() error {
-	_, err := io.Copy(io.Discard, resp.httpBody)
-	logQueryFinished(resp.ctx)
+	_, err := io.Copy(io.Discard, resp)
+	scope.QueryWith(resp.ctx, zap.Int("resp_body_bytes", resp.vars.respBodyBytes))
+	scope.QueryFinish(resp.ctx)
 	return err
 }
