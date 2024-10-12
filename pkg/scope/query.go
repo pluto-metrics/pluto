@@ -105,8 +105,9 @@ func QueryFinish(ctx context.Context) {
 		return
 	}
 	vars := map[string]interface{}{
-		"kind":  "",
-		"query": "",
+		"kind":       "",
+		"query":      "",
+		"elapsed_ms": 0,
 	}
 
 	for i := 0; i < len(q.fields); i++ {
@@ -120,6 +121,8 @@ func QueryFinish(ctx context.Context) {
 			} else {
 				vars["kind"] = "select"
 			}
+		case "elapsed_ms":
+			vars["elapsed_ms"] = q.fields[i].Integer
 		}
 	}
 
