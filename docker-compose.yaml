@@ -20,4 +20,4 @@ services:
     volumes:
     - './data/clickhouse/:/var/lib/clickhouse/'
     - '/etc/localtime:/etc/localtime:ro'
-    - './example/simple/:/docker-entrypoint-initdb.d/'
+    - './example/simple/init.sql:/docker-entrypoint-initdb.d/init.sql'
