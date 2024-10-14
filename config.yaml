@@ -1,0 +1,55 @@
+clickhouse:
+  dsn: http://127.0.0.1:8123/?async_insert=1&wait_for_async_insert=1
+  # params:
+  #   X-Clickhouse-Database: pluto
+  #   async_insert: 1
+  #   wait_for_async_insert: 0
+  #   async_insert_max_data_size: 134217728
+  query_log: kind != 'insert'
+
+insert:
+  enabled: true
+  listen: 0.0.0.0:9095
+  id_func: name_with_sha256
+  table: samples_null
+  # clickhouse: {dsn: "", params: "", ...}
+  # table_override:
+  # - table: shard1.samples_null
+  #   when: get_param("shard") == 1
+  #   clickhouse: {dsn: "", params: "", ...}
+  # - table: shard2.samples_null
+  #   when: get_param("shard") == 2
+  #   clickhouse: {dsn: "", params: "", ...}
+
+
+select:
+  table_series: series
+  # series_clickhouse: {dsn: "", params: "", ...}
+  table_samples: samples
+  # samples_clickhouse: {dsn: "", params: "", ...}
+  autocomplete_lookback: 168h
+  series_partition_ms: 86400000
+  # table_series_override:
+  # - table: archive.series
+  #   when: ...
+  #   partition_ms: 86400000
+  #   autocomplete_lookback: 168h
+  #   clickhouse:  {dsn: "", params: "", ...}
+  # table_samples_override:
+  # - table: archive.samples
+  #   when: ...
+  #   clickhouse:  {dsn: "", params: "", ...}
+
+prometheus:
+  enabled: true
+  listen: 0.0.0.0:9096
+  external_url: http://127.0.0.1:9096
+  page_title: Pluto
+  lookback_delta: 1h
+  remote_read_concurrency_limit: 10
+
+debug:
+  enabled: true
+  listen: 0.0.0.0:9095
+  pprof: true
+  metrics: true
