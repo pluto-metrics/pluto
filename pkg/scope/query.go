@@ -104,29 +104,25 @@ func QueryFinish(ctx context.Context) {
 	if q.cfg.QueryLogExpr == nil {
 		return
 	}
-	vars := map[string]interface{}{
-		"kind":       "",
-		"query":      "",
-		"elapsed_ms": 0,
-	}
+	vars := config.QueryLogEnv{}
 
 	for i := 0; i < len(q.fields); i++ {
 		switch q.fields[i].Key {
 		case "query":
 			q.fields[i].String = queryFormat(q.fields[i].String)
-			vars["query"] = q.fields[i].String
+			vars.Query = q.fields[i].String
 			qn := strings.ToLower(q.fields[i].String)
 			if strings.HasPrefix(qn, "insert") {
-				vars["kind"] = "insert"
+				vars.Kind = "insert"
 			} else {
-				vars["kind"] = "select"
+				vars.Kind = "select"
 			}
 		case "elapsed_ms":
-			vars["elapsed_ms"] = q.fields[i].Integer
+			vars.ElapsedMs = q.fields[i].Integer
 		}
 	}
 
-	result, err := q.cfg.QueryLogExpr.Evaluate(vars)
+	result, err := q.cfg.ShouldQueryLog(vars)
 	if err != nil {
 		zap.L().Error("can't evaluate expression", zap.String("expr", q.cfg.QueryLog), zap.Error(err))
 		return

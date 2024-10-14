@@ -21,9 +21,7 @@ import (
 )
 
 type Opts struct {
-	Clickhouse      config.ClickHouse
-	ClickhouseTable string
-	IDFunc          string
+	Config *config.Config
 }
 
 type PrometheusRemoteWrite struct {
@@ -57,13 +55,28 @@ func (rcv *PrometheusRemoteWrite) ServeHTTP(w http.ResponseWriter, r *http.Reque
 		return
 	}
 
-	qq := fmt.Sprintf("INSERT INTO %s FORMAT RowBinaryWithNamesAndTypes\n", rcv.opts.ClickhouseTable)
+	insertEnv := config.InsertEnv{
+		GetParams: map[string]string{},
+	}
+
+	for k := range r.URL.Query() {
+		insertEnv.GetParams[k] = r.URL.Query().Get(k)
+	}
+
+	insertCfg, err := rcv.opts.Config.InsertConfig(insertEnv)
+	if err != nil {
+		zap.L().Error("can't get insert config", zap.Error(err))
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	qq := fmt.Sprintf("INSERT INTO %s FORMAT RowBinaryWithNamesAndTypes\n", insertCfg.Table)
 
 	ctx := scope.QueryBegin(r.Context())
 	scope.QueryWith(ctx, zap.String("query", qq))
 	defer scope.QueryFinish(ctx)
 
-	chRequest, err := query.NewRequest(ctx, rcv.opts.Clickhouse, query.Opts{})
+	chRequest, err := query.NewRequest(ctx, insertCfg.ClickHouse, query.Opts{})
 	if err != nil {
 		zap.L().Error("can't create request to clickhouse", zap.Error(err))
 		http.Error(w, err.Error(), http.StatusBadGateway)
