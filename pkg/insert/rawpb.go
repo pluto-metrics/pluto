@@ -1,12 +1,23 @@
 package insert
 
 import (
+	"sync"
+	"unsafe"
+
 	"github.com/pluto-metrics/pluto/pkg/insert/id"
 	"github.com/pluto-metrics/pluto/pkg/insert/labels"
 	"github.com/pluto-metrics/pluto/pkg/rawpb"
 	"github.com/pluto-metrics/rowbinary"
 	"github.com/pluto-metrics/rowbinary/schema"
 )
+
+var pbTimeseriesPool = sync.Pool{
+	New: func() interface{} { return &pbTimeseries{} },
+}
+
+func unsafeBytesToString(b []byte) string {
+	return unsafe.String(unsafe.SliceData(b), len(b))
+}
 
 type pbSample struct {
 	Value     float64
@@ -24,7 +35,7 @@ func (p *pbTimeseries) begin() error {
 	return nil
 }
 
-func (p *pbTimeseries) lableBegin() error {
+func (p *pbTimeseries) labelBegin() error {
 	p.Labels = append(p.Labels, labels.Bytes{})
 	return nil
 }
@@ -53,7 +64,7 @@ func (p *pbTimeseries) sampleTimestamp(v int64) error {
 	return nil
 }
 
-func rawpbPromPbToRowBinary(raw []byte, w rowbinary.Writer, h id.Provider) error {
+func payloadToRowBinary(raw []byte, w rowbinary.Writer, h id.Provider) error {
 	ws := schema.NewWriter(w).
 		Format(schema.RowBinaryWithNamesAndTypes).
 		Column("id", rowbinary.String).
@@ -66,16 +77,14 @@ func rawpbPromPbToRowBinary(raw []byte, w rowbinary.Writer, h id.Provider) error
 		return err
 	}
 
-	ts := &pbTimeseries{
-		Labels:  make([]labels.Bytes, 0),
-		Samples: make([]pbSample, 0),
-	}
+	ts := pbTimeseriesPool.Get().(*pbTimeseries)
+	defer pbTimeseriesPool.Put(ts)
 
 	parser := rawpb.New(
 		rawpb.FieldNested(1, rawpb.New(
 			rawpb.Begin(ts.begin),
 			rawpb.FieldNested(1, rawpb.New(
-				rawpb.Begin(ts.lableBegin),
+				rawpb.Begin(ts.labelBegin),
 				rawpb.FieldBytes(1, ts.labelName),
 				rawpb.FieldBytes(2, ts.labelValue),
 			)),
@@ -88,12 +97,12 @@ func rawpbPromPbToRowBinary(raw []byte, w rowbinary.Writer, h id.Provider) error
 				if len(ts.Labels) == 0 || len(ts.Samples) == 0 {
 					return nil
 				}
-				h.UpdateBytes(ts.Labels)
+				h.Update(ts.Labels)
 
 				for j := 0; j < len(ts.Samples); j++ {
 					if err := ws.WriteValues(
-						h.ID(),
-						h.Name(),
+						unsafeBytesToString(h.ID()),
+						unsafeBytesToString(h.Name()),
 						ts.Labels,
 						ts.Samples[j].Timestamp,
 						ts.Samples[j].Value,

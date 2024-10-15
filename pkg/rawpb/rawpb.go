@@ -19,13 +19,13 @@ type field struct {
 type RawPB struct {
 	// @TODO: may use array
 	beginFunc func() error
-	schema    map[uint64]*field
+	schema    []field // @TODO unlimited schema
 	endFunc   func() error
 }
 
 func New(opts ...Option) *RawPB {
 	r := &RawPB{
-		schema: make(map[uint64]*field),
+		schema: make([]field, 0),
 	}
 
 	for _, o := range opts {
@@ -33,6 +33,14 @@ func New(opts ...Option) *RawPB {
 	}
 
 	return r
+}
+
+func (pb *RawPB) setField(num int, f field) {
+	for len(pb.schema) <= num {
+		pb.schema = append(pb.schema, field{})
+	}
+
+	pb.schema[num] = f
 }
 
 func (pb *RawPB) Parse(body []byte) error {
@@ -58,11 +66,8 @@ func (pb *RawPB) Parse(body []byte) error {
 			if err != nil {
 				return err
 			}
-			if f, ok := pb.schema[num]; ok {
-				if f.varint == nil {
-					return errors.WithStack(ErrorWrongWireType)
-				}
-				if err := f.varint(v); err != nil {
+			if pb.schema[num].varint != nil {
+				if err := pb.schema[num].varint(v); err != nil {
 					return err
 				}
 			}
@@ -71,11 +76,8 @@ func (pb *RawPB) Parse(body []byte) error {
 			if err != nil {
 				return err
 			}
-			if f, ok := pb.schema[num]; ok {
-				if f.fixed64 == nil {
-					return errors.WithStack(ErrorWrongWireType)
-				}
-				if err := f.fixed64(v); err != nil {
+			if pb.schema[num].fixed64 != nil {
+				if err := pb.schema[num].fixed64(v); err != nil {
 					return err
 				}
 			}
@@ -84,12 +86,10 @@ func (pb *RawPB) Parse(body []byte) error {
 			if err != nil {
 				return err
 			}
-			if f, ok := pb.schema[num]; ok {
-				if f.bytes != nil {
-					err = f.bytes(v)
-					if err != nil {
-						return err
-					}
+			if pb.schema[num].bytes != nil {
+				err = pb.schema[num].bytes(v)
+				if err != nil {
+					return err
 				}
 				// @TODO: unpacked
 			}
@@ -98,11 +98,8 @@ func (pb *RawPB) Parse(body []byte) error {
 			if err != nil {
 				return err
 			}
-			if f, ok := pb.schema[num]; ok {
-				if f.fixed32 == nil {
-					return errors.WithStack(ErrorWrongWireType)
-				}
-				if err := f.fixed32(v); err != nil {
+			if pb.schema[num].fixed32 != nil {
+				if err := pb.schema[num].fixed32(v); err != nil {
 					return err
 				}
 			}

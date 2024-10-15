@@ -77,7 +77,7 @@ func (rcv *PrometheusRemoteWrite) ServeHTTP(w http.ResponseWriter, r *http.Reque
 		return
 	}
 
-	if err := rawpbPromPbToRowBinary(reqRaw, chRequest, id.NewNameWithSha256()); err != nil {
+	if err := payloadToRowBinary(reqRaw, chRequest, id.NewNameWithSha256()); err != nil {
 		zap.L().Error("can't write request to clickhouse", zap.Error(err))
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
