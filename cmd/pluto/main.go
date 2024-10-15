@@ -39,9 +39,7 @@ func main() {
 	if cfg.Insert.Enabled {
 		mux := httpManager.Mux(cfg.Insert.Listen)
 		rw := insert.NewPrometheusRemoteWrite(insert.Opts{
-			Clickhouse:      cfg.ClickHouse,
-			ClickhouseTable: cfg.Insert.Table,
-			IDFunc:          cfg.Insert.IDFunc,
+			Config: cfg,
 		})
 
 		mux.Handle("/api/v1/write", rw)

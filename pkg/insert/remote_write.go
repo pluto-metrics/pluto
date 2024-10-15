@@ -33,6 +33,10 @@ func NewPrometheusRemoteWrite(opts Opts) *PrometheusRemoteWrite {
 }
 
 func (rcv *PrometheusRemoteWrite) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+	if rcv.opts.Config.Insert.CloseConnections {
+		w.Header().Add("Connection", "close")
+	}
+
 	reqCompressed, err := io.ReadAll(r.Body)
 	if err != nil {
 		zap.L().Error("can't read prometheus request", zap.Error(err))
@@ -55,15 +59,9 @@ func (rcv *PrometheusRemoteWrite) ServeHTTP(w http.ResponseWriter, r *http.Reque
 		return
 	}
 
-	insertEnv := config.InsertEnv{
-		GetParams: map[string]string{},
-	}
-
-	for k := range r.URL.Query() {
-		insertEnv.GetParams[k] = r.URL.Query().Get(k)
-	}
-
-	insertCfg, err := rcv.opts.Config.InsertConfig(insertEnv)
+	insertCfg, err := rcv.opts.Config.InsertConfig(
+		config.NewInsertEnv().WithRequest(r),
+	)
 	if err != nil {
 		zap.L().Error("can't get insert config", zap.Error(err))
 		http.Error(w, err.Error(), http.StatusInternalServerError)
@@ -141,5 +139,18 @@ func (rcv *PrometheusRemoteWrite) ServeHTTP(w http.ResponseWriter, r *http.Reque
 		zap.L().Error("can't close response from clickhouse", zap.Error(err))
 		http.Error(w, err.Error(), http.StatusBadGateway)
 		return
+	}
+
+	if rcv.opts.Config.Insert.CloseConnections {
+		hj, ok := w.(http.Hijacker)
+		if !ok {
+			return
+		}
+		conn, _, err := hj.Hijack()
+		if err != nil {
+			return
+		}
+
+		conn.Close()
 	}
 }

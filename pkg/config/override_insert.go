@@ -1,12 +1,15 @@
 package config
 
 import (
+	"net/http"
+
 	"github.com/expr-lang/expr"
 	"github.com/spf13/cast"
 )
 
 type InsertEnv struct {
 	GetParams map[string]string `expr:"GET"`
+	Headers   map[string]string `expr:"GET"`
 }
 
 type InsertConfig struct {
@@ -15,7 +18,14 @@ type InsertConfig struct {
 	ClickHouse ClickHouse `yaml:"clickhouse"`
 }
 
-func (cfg *Config) InsertConfig(values InsertEnv) (InsertConfig, error) {
+func NewInsertEnv() *InsertEnv {
+	return &InsertEnv{
+		GetParams: map[string]string{},
+		Headers:   map[string]string{},
+	}
+}
+
+func (cfg *Config) InsertConfig(values *InsertEnv) (InsertConfig, error) {
 	ret := InsertConfig{}
 
 	for _, o := range cfg.Insert.TableOverride {
@@ -39,4 +49,16 @@ func (cfg *Config) InsertConfig(values InsertEnv) (InsertConfig, error) {
 	ret.IDFunc = mergeAny(cfg.Insert.IDFunc)
 	ret.ClickHouse = *mergeClickHouse(&cfg.ClickHouse, cfg.Insert.ClickHouse)
 	return ret, nil
+}
+
+func (env *InsertEnv) WithRequest(r *http.Request) *InsertEnv {
+	for k := range r.URL.Query() {
+		env.GetParams[k] = r.URL.Query().Get(k)
+	}
+
+	for k := range r.Header {
+		env.Headers[k] = r.Header.Get(k)
+	}
+
+	return env
 }

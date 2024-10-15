@@ -14,12 +14,13 @@ type Config struct {
 	ClickHouse ClickHouse `yaml:"clickhouse"`
 
 	Insert struct {
-		Enabled       bool        `yaml:"enabled" default:"true"`
-		Listen        string      `yaml:"listen" default:"0.0.0.0:9095" validate:"hostname_port"`
-		IDFunc        string      `yaml:"id_func" default:"name_with_sha256" validate:"oneof=name_with_sha256"`
-		Table         string      `yaml:"table" default:"samples_null"`
-		ClickHouse    *ClickHouse `yaml:"clickhouse"`
-		TableOverride []struct {
+		Enabled          bool        `yaml:"enabled" default:"true"`
+		Listen           string      `yaml:"listen" default:"0.0.0.0:9095" validate:"hostname_port"`
+		CloseConnections bool        `yaml:"close-connections" default:"false"`
+		IDFunc           string      `yaml:"id_func" default:"name_with_sha256" validate:"oneof=name_with_sha256"`
+		Table            string      `yaml:"table" default:"samples_null"`
+		ClickHouse       *ClickHouse `yaml:"clickhouse"`
+		TableOverride    []struct {
 			Table      string      `yaml:"table"`
 			IDFunc     string      `yaml:"id_func" default:"name_with_sha256" validate:"oneof=name_with_sha256"`
 			When       string      `yaml:"when" default:"false"`
