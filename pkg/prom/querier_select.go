@@ -91,12 +91,18 @@ func (q *Querier) Select(ctx context.Context, sortSeries bool, selectHints *stor
 		return createErr(err)
 	}
 
+	idsWriterBuf := bufio.NewWriter(idsWriter)
+
 	scope.QueryWith(ctx, zap.Int("ids", len(seriesMap)))
 
 	for k := range seriesMap {
-		if err = rowbinary.String.Write(idsWriter, k); err != nil {
+		if err = rowbinary.String.Write(idsWriterBuf, k); err != nil {
 			return createErr(err)
 		}
+	}
+
+	if err = idsWriterBuf.Flush(); err != nil {
+		return createErr(err)
 	}
 
 	if err = reqWriter.Close(); err != nil {

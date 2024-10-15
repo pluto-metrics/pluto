@@ -180,14 +180,19 @@ func NewRequest(ctx context.Context, cfg config.ClickHouse, opts Opts) (*Request
 	return req, nil
 }
 
-// Write пишет данные на отправку
+// Write ...
 func (req *Request) Write(p []byte) (int, error) {
 	n, err := req.writerBuf.Write(p)
 	req.vars.reqBodyBytes += n
 	return n, err
 }
 
-// Close прекращает запрос (если он еще не завершился), высвобождает ресурсы
+func (req *Request) WriteByte(b byte) error {
+	req.vars.reqBodyBytes += 1
+	return req.writerBuf.WriteByte(b)
+}
+
+// Close ...
 func (req *Request) Close() error {
 	req.ctxCancel()
 
