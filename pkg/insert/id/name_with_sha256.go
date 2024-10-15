@@ -60,7 +60,7 @@ func (h *NameWithSha256) Update(labels []labels.Bytes) {
 		h.hb.WriteByte('=')
 		h.hb.Write(labels[i].Value)
 
-		if bytes.Equal(labels[i].Name, labelName) {
+		if h.name == nil && bytes.Equal(labels[i].Name, labelName) {
 			h.name = labels[i].Value
 		}
 	}
