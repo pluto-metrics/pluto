@@ -15,7 +15,7 @@ require (
 	github.com/jinzhu/configor v1.2.2
 	github.com/pkg/errors v0.9.1
 	github.com/pluto-metrics/prometheus-ui-static v0.2.54-1.1
-	github.com/pluto-metrics/rowbinary v0.0.0-20241010141531-0afbe148bf2d
+	github.com/pluto-metrics/rowbinary v0.0.0-20241015105747-4da43534bb3a
 	github.com/prometheus/client_golang v1.19.1
 	github.com/prometheus/client_model v0.6.1
 	github.com/prometheus/common/assets v0.2.0
