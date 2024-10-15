@@ -4,7 +4,7 @@ import (
 	"bufio"
 	"bytes"
 	"crypto/sha256"
-	"fmt"
+	"encoding/hex"
 	"hash"
 	"sort"
 	"unsafe"
@@ -19,10 +19,12 @@ func unsafeBytesToString(b []byte) string {
 var labelName = []byte("__name__")
 
 type NameWithSha256 struct {
-	name []byte
-	id   []byte
-	hh   hash.Hash
-	hb   *bufio.Writer
+	name  []byte
+	id    []byte
+	idLen int
+	hash  [32]byte
+	hh    hash.Hash
+	hb    *bufio.Writer
 }
 
 func NewNameWithSha256() *NameWithSha256 {
@@ -66,5 +68,13 @@ func (h *NameWithSha256) Update(labels []labels.Bytes) {
 	}
 	h.hb.Flush()
 
-	h.id = []byte(fmt.Sprintf("%s?%x", h.name, h.hh.Sum(nil)))
+	if len(h.id) < len(h.name)+65 {
+		h.id = make([]byte, len(h.name)+65)
+	}
+
+	h.hh.Sum(h.hash[:0])
+
+	copy(h.id, h.name)
+	h.id[len(h.name)] = '?'
+	hex.Encode(h.id[len(h.name)+1:], h.hash[:])
 }
