@@ -1,6 +1,7 @@
 package id
 
 import (
+	"github.com/pluto-metrics/pluto/pkg/insert/labels"
 	"github.com/prometheus/prometheus/prompb"
 )
 
@@ -20,4 +21,7 @@ func (h *Noop) ID() string {
 
 func (h *Noop) Name() string {
 	return "noop"
+}
+
+func (h *Noop) UpdateBytes(labels []labels.Bytes) {
 }

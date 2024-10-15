@@ -32,14 +32,14 @@ func TestRawPB(t *testing.T) {
 	body := readFixture("34dd878af9d34cae46373dffa8df973ed94ab45be0ffa2fa0830bb1bb497ad90.gz")
 
 	r := New(
-		Begin(func() {}),
-		End(func() {}),
+		Begin(func() error { return nil }),
+		End(func() error { return nil }),
 		FieldNested(1, New(
-			Begin(func() {}),
-			End(func() {}),
+			Begin(func() error { return nil }),
+			End(func() error { return nil }),
 			FieldNested(1, New(
-				Begin(func() {}),
-				End(func() {}),
+				Begin(func() error { return nil }),
+				End(func() error { return nil }),
 				FieldString(1, func(v string) error {
 					return nil
 				}),
@@ -48,8 +48,8 @@ func TestRawPB(t *testing.T) {
 				}),
 			)),
 			FieldNested(2, New(
-				Begin(func() {}),
-				End(func() {}),
+				Begin(func() error { return nil }),
+				End(func() error { return nil }),
 				FieldFloat64(1, func(v float64) error {
 					return nil
 				}),
@@ -67,14 +67,14 @@ func TestRawPB(t *testing.T) {
 func BenchmarkParse(b *testing.B) {
 	raw := readFixture("34dd878af9d34cae46373dffa8df973ed94ab45be0ffa2fa0830bb1bb497ad90.gz")
 	r := New(
-		Begin(func() {}),
-		End(func() {}),
+		Begin(func() error { return nil }),
+		End(func() error { return nil }),
 		FieldNested(1, New(
-			Begin(func() {}),
-			End(func() {}),
+			Begin(func() error { return nil }),
+			End(func() error { return nil }),
 			FieldNested(1, New(
-				Begin(func() {}),
-				End(func() {}),
+				Begin(func() error { return nil }),
+				End(func() error { return nil }),
 				FieldBytes(1, func(v []byte) error {
 					return nil
 				}),
@@ -83,8 +83,8 @@ func BenchmarkParse(b *testing.B) {
 				}),
 			)),
 			FieldNested(2, New(
-				Begin(func() {}),
-				End(func() {}),
+				Begin(func() error { return nil }),
+				End(func() error { return nil }),
 				FieldFloat64(1, func(v float64) error {
 					return nil
 				}),

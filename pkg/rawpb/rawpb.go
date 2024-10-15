@@ -18,9 +18,9 @@ type field struct {
 
 type RawPB struct {
 	// @TODO: may use array
-	beginFunc func()
+	beginFunc func() error
 	schema    map[uint64]*field
-	endFunc   func()
+	endFunc   func() error
 }
 
 func New(opts ...Option) *RawPB {
@@ -37,7 +37,9 @@ func New(opts ...Option) *RawPB {
 
 func (pb *RawPB) Parse(body []byte) error {
 	if pb.beginFunc != nil {
-		pb.beginFunc()
+		if err := pb.beginFunc(); err != nil {
+			return err
+		}
 	}
 
 	r := newReader(body)
@@ -110,7 +112,9 @@ func (pb *RawPB) Parse(body []byte) error {
 	}
 
 	if pb.endFunc != nil {
-		pb.endFunc()
+		if err := pb.endFunc(); err != nil {
+			return err
+		}
 	}
 	return nil
 }

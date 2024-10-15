@@ -2,13 +2,13 @@ package rawpb
 
 type Option func(*RawPB)
 
-func Begin(f func()) Option {
+func Begin(f func() error) Option {
 	return func(p *RawPB) {
 		p.beginFunc = f
 	}
 }
 
-func End(f func()) Option {
+func End(f func() error) Option {
 	return func(p *RawPB) {
 		p.endFunc = f
 	}
