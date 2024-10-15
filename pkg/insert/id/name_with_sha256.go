@@ -33,7 +33,7 @@ func NameWithSha256(labels []prompb.Label) (string, string) {
 		}
 	}
 
-	b.WriteString(url.QueryEscape(name))
+	b.WriteString(url.PathEscape(name))
 	b.WriteByte('?')
 	fmt.Fprintf(&b, "%x", h.Sum(nil))
 
