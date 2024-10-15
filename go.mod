@@ -5,7 +5,6 @@ go 1.23.1
 toolchain go1.23.2
 
 require (
-	github.com/Knetic/govaluate v3.0.0+incompatible
 	github.com/OneOfOne/xxhash v1.2.8
 	github.com/expr-lang/expr v1.16.9
 	github.com/go-playground/validator/v10 v10.22.1
@@ -15,7 +14,7 @@ require (
 	github.com/jinzhu/configor v1.2.2
 	github.com/pkg/errors v0.9.1
 	github.com/pluto-metrics/prometheus-ui-static v0.2.54-1.1
-	github.com/pluto-metrics/rowbinary v0.0.0-20241015105747-4da43534bb3a
+	github.com/pluto-metrics/rowbinary v0.0.0-20241015222508-ef3b153c7914
 	github.com/prometheus/client_golang v1.19.1
 	github.com/prometheus/client_model v0.6.1
 	github.com/prometheus/common/assets v0.2.0

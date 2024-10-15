@@ -93,10 +93,14 @@ func (q *Querier) Select(ctx context.Context, sortSeries bool, selectHints *stor
 
 	idsWriterBuf := bufio.NewWriter(idsWriter)
 
+	schemaWriter := schema.NewWriter(idsWriterBuf).
+		Format(schema.RowBinary).
+		Column("id", rowbinary.String)
+
 	scope.QueryWith(ctx, zap.Int("ids", len(seriesMap)))
 
 	for k := range seriesMap {
-		if err = rowbinary.String.Write(idsWriterBuf, k); err != nil {
+		if err = schemaWriter.WriteValues(k); err != nil {
 			return createErr(err)
 		}
 	}
