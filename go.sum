@@ -374,6 +374,8 @@ github.com/pluto-metrics/rowbinary v0.0.0-20241015220306-b8a326aecb69 h1:lqMg4Yj
 github.com/pluto-metrics/rowbinary v0.0.0-20241015220306-b8a326aecb69/go.mod h1:PnypiLMkgb6KkCPvz33oLE3KewFI27NtLw260Y6XSnc=
 github.com/pluto-metrics/rowbinary v0.0.0-20241015222508-ef3b153c7914 h1:LKVAXjDFF0ARbJrF4AaKmWQN+0mQNOD/19ath2Jz970=
 github.com/pluto-metrics/rowbinary v0.0.0-20241015222508-ef3b153c7914/go.mod h1:PnypiLMkgb6KkCPvz33oLE3KewFI27NtLw260Y6XSnc=
+github.com/pluto-metrics/rowbinary v0.0.0-20241016072233-3f4c44e49f41 h1:YFh74gzE+NLxkamxfT2GqJ06mCGpNhgZz8vsKdRH/ss=
+github.com/pluto-metrics/rowbinary v0.0.0-20241016072233-3f4c44e49f41/go.mod h1:PnypiLMkgb6KkCPvz33oLE3KewFI27NtLw260Y6XSnc=
 github.com/pmezard/go-difflib v1.0.0/go.mod h1:iKH77koFhYxTK1pcRnkKkqfTogsbg7gZNVY4sRDYZ/4=
 github.com/pmezard/go-difflib v1.0.1-0.20181226105442-5d4384ee4fb2 h1:Jamvg5psRIccs7FGNTlIRMkT8wgtp5eCXdBlqhYGL6U=
 github.com/pmezard/go-difflib v1.0.1-0.20181226105442-5d4384ee4fb2/go.mod h1:iKH77koFhYxTK1pcRnkKkqfTogsbg7gZNVY4sRDYZ/4=
