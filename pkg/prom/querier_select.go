@@ -26,6 +26,10 @@ var timeNow = time.Now
 // Select returns a set of series that matches the given label matchers.
 func (q *Querier) Select(ctx context.Context, sortSeries bool, selectHints *storage.SelectHints, labelsMatcher ...*labels.Matcher) storage.SeriesSet {
 	seriesMap, err := q.lookup(ctx, selectHints.Start, selectHints.End, labelsMatcher)
+	if err != nil {
+		zap.L().Error("can't find series", zap.Error(err))
+		return nil
+	}
 
 	if len(seriesMap) == 0 {
 		return emptySeriesSet()
@@ -61,10 +65,18 @@ func (q *Querier) Select(ctx context.Context, sortSeries bool, selectHints *stor
 		"step":          step,
 		"lookbackDelta": q.config.Prometheus.LookbackDelta.Milliseconds(),
 	})
+	if err != nil {
+		zap.L().Error("can't create request to clickhouse", zap.Error(err))
+		return nil
+	}
 
 	ctx = scope.QueryBegin(ctx)
 	scope.QueryWith(ctx, zap.String("query", qq))
 	defer scope.QueryFinish(ctx)
+
+	if len(seriesMap) <= 5 {
+		scope.QueryWith(ctx, zap.Strings("ids", slices.Collect(maps.Keys(seriesMap))))
+	}
 
 	reqBuf := new(bytes.Buffer)
 	reqWriter := multipart.NewWriter(reqBuf)
@@ -138,11 +150,18 @@ func (q *Querier) Select(ctx context.Context, sortSeries bool, selectHints *stor
 
 	// fetch results
 	dataMap := make(map[string]*series, len(seriesMap))
+	uniqDataMap := make(map[string]*series, len(seriesMap)) // key = labelsMapKey(labels)
 	for k, v := range seriesMap {
-		dataMap[k] = &series{
-			labels:  v,
-			samples: make([]sample, 0),
+		uniqKey := labelsMapKey(v)
+		d := uniqDataMap[uniqKey]
+		if d == nil {
+			d = &series{
+				labels:  v,
+				samples: make([]sample, 0),
+			}
 		}
+		uniqDataMap[uniqKey] = d
+		dataMap[k] = d
 	}
 
 	r := schema.NewReader(bufio.NewReader(chResponse)).
@@ -168,8 +187,8 @@ func (q *Querier) Select(ctx context.Context, sortSeries bool, selectHints *stor
 		return nil
 	}
 
-	data := make([]series, 0, len(dataMap))
-	for _, v := range dataMap {
+	data := make([]series, 0, len(uniqDataMap))
+	for _, v := range uniqDataMap {
 		if len(v.samples) == 0 {
 			continue
 		}

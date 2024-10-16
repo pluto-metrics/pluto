@@ -3,6 +3,7 @@ package prom
 import (
 	"bufio"
 	"context"
+	"sort"
 
 	"github.com/pluto-metrics/pluto/pkg/scope"
 	"github.com/pluto-metrics/pluto/pkg/sql"
@@ -64,6 +65,9 @@ func (q *Querier) lookup(ctx context.Context, start, end int64, matchers []*labe
 		if err != nil {
 			return nil, err
 		}
+		sort.Slice(lb, func(i, j int) bool {
+			return lb[i].Name < lb[j].Name
+		})
 		ret[id] = lb
 	}
 	if r.Err() != nil {
