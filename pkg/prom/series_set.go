@@ -2,6 +2,7 @@ package prom
 
 import (
 	"log"
+	"math"
 	"sort"
 
 	"github.com/prometheus/prometheus/util/annotations"
@@ -58,7 +59,15 @@ func makeSeriesSet(data []series, hints hints) (storage.SeriesSet, error) {
 		})
 	}
 
-	// @TODO: append null point
+	// append null point
+	if hints.step > 0 {
+		for index := 0; index < len(ss.data); index++ {
+			ss.data[index].samples = append(ss.data[index].samples, sample{
+				timestamp: ss.data[index].samples[len(ss.data[index].samples)-1].timestamp + hints.step,
+				value:     math.NaN(),
+			})
+		}
+	}
 
 	return ss, nil
 }
