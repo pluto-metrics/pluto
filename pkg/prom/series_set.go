@@ -39,6 +39,8 @@ type series struct {
 type seriesSet struct {
 	data    []series
 	current int
+	ann     annotations.Annotations
+	err     error
 }
 
 var _ storage.SeriesSet = &seriesSet{}
@@ -75,6 +77,14 @@ func makeSeriesSet(data []series, hints hints) (storage.SeriesSet, error) {
 
 func emptySeriesSet() storage.SeriesSet {
 	return &seriesSet{data: make([]series, 0), current: -1}
+}
+
+func newLabelsSeriesSet(metrics []labels.Labels) storage.SeriesSet {
+	data := make([]series, len(metrics))
+	for i := 0; i < len(metrics); i++ {
+		data[i].labels = metrics[i]
+	}
+	return &seriesSet{data: data, current: -1}
 }
 
 // Seek advances the iterator forward to the value at or after
@@ -142,7 +152,7 @@ func (sit *seriesIterator) Next() chunkenc.ValueType {
 func (sit *seriesIterator) Err() error { return nil }
 
 // Err returns the current error.
-func (ss *seriesSet) Err() error { return nil }
+func (ss *seriesSet) Err() error { return ss.err }
 
 func (ss *seriesSet) At() storage.Series {
 	if ss == nil || ss.current < 0 || ss.current >= len(ss.data) {
@@ -166,8 +176,8 @@ func (ss *seriesSet) Next() bool {
 }
 
 // Warnings ...
-func (s *seriesSet) Warnings() annotations.Annotations {
-	return nil
+func (ss *seriesSet) Warnings() annotations.Annotations {
+	return ss.ann
 }
 
 // Iterator returns a new iterator of the data of the series.
