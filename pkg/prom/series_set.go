@@ -19,7 +19,8 @@ type sample struct {
 }
 
 type hints struct {
-	step int64
+	step     int64
+	function string
 }
 
 // SeriesIterator iterates over the data of a time series.
@@ -60,7 +61,7 @@ func makeSeriesSet(data []series, hints hints) (storage.SeriesSet, error) {
 	}
 
 	// append null point
-	if hints.step > 0 {
+	if hints.step > 0 && hints.function == "rate" {
 		for index := 0; index < len(ss.data); index++ {
 			ss.data[index].samples = append(ss.data[index].samples, sample{
 				timestamp: ss.data[index].samples[len(ss.data[index].samples)-1].timestamp + hints.step,

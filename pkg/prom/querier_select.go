@@ -195,7 +195,7 @@ func (q *Querier) Select(ctx context.Context, sortSeries bool, selectHints *stor
 		data = append(data, *v)
 	}
 
-	ss, err := makeSeriesSet(data, hints{step: step})
+	ss, err := makeSeriesSet(data, hints{step: step, function: selectHints.Func})
 	if err != nil {
 		zap.L().Error("can't make series", zap.Error(err))
 		return nil
