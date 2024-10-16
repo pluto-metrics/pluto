@@ -28,7 +28,7 @@ func (q *Querier) Select(ctx context.Context, sortSeries bool, selectHints *stor
 	seriesMap, err := q.lookup(ctx, selectHints.Start, selectHints.End, labelsMatcher)
 	if err != nil {
 		zap.L().Error("can't find series", zap.Error(err))
-		return nil
+		return errorSeriesSet(err)
 	}
 
 	if len(seriesMap) == 0 {
@@ -67,7 +67,7 @@ func (q *Querier) Select(ctx context.Context, sortSeries bool, selectHints *stor
 	})
 	if err != nil {
 		zap.L().Error("can't create request to clickhouse", zap.Error(err))
-		return nil
+		return errorSeriesSet(err)
 	}
 
 	ctx = scope.QueryBegin(ctx)
@@ -83,7 +83,7 @@ func (q *Querier) Select(ctx context.Context, sortSeries bool, selectHints *stor
 
 	createErr := func(err error) storage.SeriesSet {
 		zap.L().Error("can't create request to clickhouse", zap.Error(err))
-		return nil
+		return errorSeriesSet(err)
 	}
 
 	if err = reqWriter.WriteField("query", qq); err != nil {
@@ -137,14 +137,14 @@ func (q *Querier) Select(ctx context.Context, sortSeries bool, selectHints *stor
 	_, err = io.Copy(chRequest, reqBuf)
 	if err != nil {
 		zap.L().Error("can't write query to clickhouse", zap.Error(err))
-		return nil
+		return errorSeriesSet(err)
 	}
 	defer chRequest.Close()
 
 	chResponse, err := chRequest.Finish()
 	if err != nil {
 		zap.L().Error("can't finish request to clickhouse", zap.Error(err))
-		return nil
+		return errorSeriesSet(err)
 	}
 	defer chResponse.Close()
 
@@ -176,7 +176,7 @@ func (q *Querier) Select(ctx context.Context, sortSeries bool, selectHints *stor
 		value, _ := schema.Read(r, rowbinary.Float64)
 		if r.Err() != nil {
 			zap.L().Error("can't read row from clickhouse", zap.Error(r.Err()))
-			return nil
+			return errorSeriesSet(r.Err())
 		}
 
 		dataMap[id].sampleAppend(timestamp, value)
@@ -184,7 +184,7 @@ func (q *Querier) Select(ctx context.Context, sortSeries bool, selectHints *stor
 
 	if r.Err() != nil {
 		zap.L().Error("can't read response from clickhouse", zap.Error(r.Err()))
-		return nil
+		return errorSeriesSet(r.Err())
 	}
 
 	data := make([]series, 0, len(uniqDataMap))
@@ -198,7 +198,7 @@ func (q *Querier) Select(ctx context.Context, sortSeries bool, selectHints *stor
 	ss, err := makeSeriesSet(data, hints{step: step, function: selectHints.Func})
 	if err != nil {
 		zap.L().Error("can't make series", zap.Error(err))
-		return nil
+		return errorSeriesSet(err)
 	}
 
 	return ss

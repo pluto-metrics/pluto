@@ -79,6 +79,10 @@ func emptySeriesSet() storage.SeriesSet {
 	return &seriesSet{data: make([]series, 0), current: -1}
 }
 
+func errorSeriesSet(err error) storage.SeriesSet {
+	return &seriesSet{err: err, current: -1}
+}
+
 func newLabelsSeriesSet(metrics []labels.Labels) storage.SeriesSet {
 	data := make([]series, len(metrics))
 	for i := 0; i < len(metrics); i++ {
