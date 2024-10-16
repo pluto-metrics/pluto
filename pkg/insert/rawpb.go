@@ -1,6 +1,7 @@
 package insert
 
 import (
+	"io"
 	"sync"
 	"unsafe"
 
@@ -64,7 +65,7 @@ func (p *pbTimeseries) sampleTimestamp(v int64) error {
 	return nil
 }
 
-func payloadToRowBinary(raw []byte, w rowbinary.OriginWriter, h id.Provider) error {
+func payloadToRowBinary(raw []byte, w io.Writer, h id.Provider) error {
 	ws := schema.NewWriter(w).
 		Format(schema.RowBinaryWithNamesAndTypes).
 		Column("id", rowbinary.String).
