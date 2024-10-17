@@ -101,10 +101,10 @@ func QueryFinish(ctx context.Context) {
 	if q.cfg == nil {
 		return
 	}
-	if q.cfg.QueryLogExpr == nil {
+	if q.cfg.QueryLog.Pass() {
 		return
 	}
-	vars := config.QueryLogEnv{}
+	vars := config.EnvQueryLog{}
 
 	for i := 0; i < len(q.fields); i++ {
 		switch q.fields[i].Key {
@@ -122,9 +122,8 @@ func QueryFinish(ctx context.Context) {
 		}
 	}
 
-	result, err := q.cfg.ShouldQueryLog(vars)
+	result, err := q.cfg.QueryLog.When(vars)
 	if err != nil {
-		zap.L().Error("can't evaluate expression", zap.String("expr", q.cfg.QueryLog), zap.Error(err))
 		return
 	}
 	if cast.ToBool(result) {

@@ -3,30 +3,53 @@ package config
 import (
 	"time"
 
-	"github.com/expr-lang/expr"
 	"github.com/expr-lang/expr/vm"
 	"github.com/go-playground/validator/v10"
 	"github.com/jinzhu/configor"
 	"go.uber.org/zap"
 )
 
+type ConfigWhen struct {
+	WhenStr  string      `yaml:"when" default:""`
+	WhenExpr *vm.Program `yaml:"-"`
+}
+
+type ClickHouse struct {
+	DSN      string            `yaml:"dsn" validate:"uri" default:"http://127.0.0.1:8123/?async_insert=1&wait_for_async_insert=1"`
+	Params   map[string]string `yaml:"params"`
+	QueryLog struct {
+		ConfigWhen `yaml:",inline"`
+	} `yaml:"query_log"`
+}
+
+type ConfigInsert struct {
+	Table      string      `yaml:"table"`
+	IDFunc     string      `yaml:"id_func" default:"" validate:"oneof='' 'name_with_sha256'"`
+	ClickHouse *ClickHouse `yaml:"clickhouse"`
+}
+
+type ConfigSeries struct {
+	Table                   string        `yaml:"table"`
+	AutocompleteLookback    time.Duration `yaml:"autocomplete_lookback"`
+	SeriesPartitionMs       int64         `yaml:"series_partition_ms"`
+	SeriesMaterializeLabels []string      `yaml:"series_materialize_labels"`
+	ClickHouse              *ClickHouse   `yaml:"clickhouse"`
+}
+
+type ConfigSamples struct {
+	Table      string      `yaml:"table"`
+	ClickHouse *ClickHouse `yaml:"clickhouse"`
+}
+
 type Config struct {
 	ClickHouse ClickHouse `yaml:"clickhouse"`
 
 	Insert struct {
-		Enabled          bool        `yaml:"enabled" default:"true"`
-		Listen           string      `yaml:"listen" default:"0.0.0.0:9095" validate:"hostname_port"`
-		CloseConnections bool        `yaml:"close-connections" default:"false"`
-		IDFunc           string      `yaml:"id_func" default:"name_with_sha256" validate:"oneof=name_with_sha256"`
-		Table            string      `yaml:"table" default:"samples_null"`
-		ClickHouse       *ClickHouse `yaml:"clickhouse"`
-		TableOverride    []struct {
-			Table      string      `yaml:"table"`
-			IDFunc     string      `yaml:"id_func" default:"name_with_sha256" validate:"oneof=name_with_sha256"`
-			When       string      `yaml:"when" default:"false"`
-			WhenExpr   *vm.Program `yaml:"-"`
-			ClickHouse *ClickHouse `yaml:"clickhouse"`
-		} `yaml:"table_override"`
+		Enabled          bool   `yaml:"enabled" default:"true"`
+		Listen           string `yaml:"listen" default:"0.0.0.0:9095" validate:"hostname_port"`
+		CloseConnections bool   `yaml:"close-connections" default:"false"`
+		Table            string `yaml:"table" default:"samples_null"`
+		IDFunc           string `yaml:"id_func" default:"name_with_sha256" validate:"oneof=name_with_sha256"`
 	} `yaml:"insert"`
 
 	Select struct {
@@ -34,22 +57,9 @@ type Config struct {
 		TableSamples         string        `yaml:"table_samples" default:"samples"`
 		AutocompleteLookback time.Duration `yaml:"autocomplete_lookback" default:"168h"`
 		SeriesPartitionMs    int64         `yaml:"series_partition_ms" default:"86400000"`
-		SamplesClickhouse    *ClickHouse   `yaml:"samples_clickhouse"`
-		SeriesClickhouse     *ClickHouse   `yaml:"series_clickhouse"`
-		TableSeriesOverride  []struct {
-			Table                string        `yaml:"table"`
-			AutocompleteLookback time.Duration `yaml:"autocomplete_lookback" default:"168h"`
-			SeriesPartitionMs    int64         `yaml:"series_partition_ms" default:"86400000"`
-			When                 string        `yaml:"when" default:"false"`
-			WhenExpr             *vm.Program   `yaml:"-"`
-			ClickHouse           *ClickHouse   `yaml:"clickhouse"`
-		} `yaml:"table_series_override"`
-		TableSamplesOverride []struct {
-			Table      string      `yaml:"table"`
-			When       string      `yaml:"when" default:"false"`
-			WhenExpr   *vm.Program `yaml:"-"`
-			ClickHouse *ClickHouse `yaml:"clickhouse"`
-		} `yaml:"table_override"`
+		// https://clickhouse.com/docs/knowledgebase/improve-map-performance
+		// column names should be label_<label_name>
+		SeriesMaterializeLabels []string `yaml:"series_materialize_labels"`
 	} `yaml:"select"`
 
 	Prometheus struct {
@@ -69,6 +79,21 @@ type Config struct {
 	} `yaml:"debug"`
 
 	Logging zap.Config `yaml:"logging"`
+
+	OverrideInsert []struct {
+		ConfigInsert `yaml:",inline"`
+		ConfigWhen   `yaml:",inline"`
+	} `yaml:"override_insert"`
+
+	OverrideSeries []struct {
+		ConfigSeries `yaml:",inline"`
+		ConfigWhen   `yaml:",inline"`
+	} `yaml:"override_series"`
+
+	OverrideSamples []struct {
+		ConfigSamples `yaml:",inline"`
+		ConfigWhen    `yaml:",inline"`
+	} `yaml:"override_samples"`
 }
 
 func LoadFromFile(filename string, development bool) (*Config, error) {
@@ -88,42 +113,37 @@ func LoadFromFile(filename string, development bool) (*Config, error) {
 		return nil, err
 	}
 
+	for i := 0; i < len(cfg.OverrideInsert); i++ {
+
+	}
+
 	if err = cfg.ClickHouse.compile(); err != nil {
 		return nil, err
 	}
-	if err = cfg.Insert.ClickHouse.compile(); err != nil {
-		return nil, err
-	}
-	if err = cfg.Select.SeriesClickhouse.compile(); err != nil {
-		return nil, err
-	}
-	if err = cfg.Select.SamplesClickhouse.compile(); err != nil {
-		return nil, err
-	}
 
-	for i := 0; i < len(cfg.Insert.TableOverride); i++ {
-		if cfg.Insert.TableOverride[i].WhenExpr, err = expr.Compile(cfg.Insert.TableOverride[i].When, expr.Env(InsertEnv{}), expr.AsBool()); err != nil {
+	for i := 0; i < len(cfg.OverrideInsert); i++ {
+		if err = cfg.OverrideInsert[i].ClickHouse.compile(); err != nil {
 			return nil, err
 		}
-		if err = cfg.Insert.TableOverride[i].ClickHouse.compile(); err != nil {
+		if err = cfg.OverrideInsert[i].compileWhen(EnvInsert{}); err != nil {
 			return nil, err
 		}
 	}
 
-	for i := 0; i < len(cfg.Select.TableSeriesOverride); i++ {
-		if cfg.Select.TableSeriesOverride[i].WhenExpr, err = expr.Compile(cfg.Select.TableSeriesOverride[i].When); err != nil {
+	for i := 0; i < len(cfg.OverrideSeries); i++ {
+		if err = cfg.OverrideSeries[i].ClickHouse.compile(); err != nil {
 			return nil, err
 		}
-		if err = cfg.Select.TableSeriesOverride[i].ClickHouse.compile(); err != nil {
+		if err = cfg.OverrideSeries[i].compileWhen(EnvSeries{}); err != nil {
 			return nil, err
 		}
 	}
 
-	for i := 0; i < len(cfg.Select.TableSamplesOverride); i++ {
-		if cfg.Select.TableSamplesOverride[i].WhenExpr, err = expr.Compile(cfg.Select.TableSamplesOverride[i].When); err != nil {
+	for i := 0; i < len(cfg.OverrideSamples); i++ {
+		if err = cfg.OverrideSamples[i].ClickHouse.compile(); err != nil {
 			return nil, err
 		}
-		if err = cfg.Select.TableSamplesOverride[i].ClickHouse.compile(); err != nil {
+		if err = cfg.OverrideSamples[i].compileWhen(EnvSamples{}); err != nil {
 			return nil, err
 		}
 	}

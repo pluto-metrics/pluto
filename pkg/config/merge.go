@@ -31,10 +31,13 @@ func merge[T nullable](values ...T) T {
 func mergeClickHouse(values ...*ClickHouse) *ClickHouse {
 	ret := &ClickHouse{}
 	for i := len(values) - 1; i >= 0; i-- {
-		ret.DSN = mergeAny(values[i].GetDSN(), ret.DSN)
-		ret.Params = merge(values[i].GetParams(), ret.Params)
-		ret.QueryLog = mergeAny(values[i].GetQueryLog(), ret.QueryLog)
-		ret.QueryLogExpr = merge(values[i].GetQueryLogExpr(), ret.QueryLogExpr)
+		if values[i] == nil {
+			continue
+		}
+		ret.DSN = mergeAny(values[i].DSN, ret.DSN)
+		ret.Params = merge(values[i].Params, ret.Params)
+		ret.QueryLog.WhenStr = mergeAny(values[i].QueryLog.WhenStr, ret.QueryLog.WhenStr)
+		ret.QueryLog.WhenExpr = merge(values[i].QueryLog.WhenExpr, ret.QueryLog.WhenExpr)
 	}
 	return ret
 }

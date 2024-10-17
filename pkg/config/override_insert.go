@@ -7,28 +7,26 @@ import (
 	"github.com/spf13/cast"
 )
 
-type InsertEnv struct {
+type EnvInsert struct {
 	GetParams map[string]string `expr:"GET"`
 	Headers   map[string]string `expr:"GET"`
 }
 
-type InsertConfig struct {
-	Table      string
-	IDFunc     string
-	ClickHouse ClickHouse `yaml:"clickhouse"`
-}
-
-func NewInsertEnv() *InsertEnv {
-	return &InsertEnv{
+func NewEnvInsert() *EnvInsert {
+	return &EnvInsert{
 		GetParams: map[string]string{},
 		Headers:   map[string]string{},
 	}
 }
 
-func (cfg *Config) InsertConfig(values *InsertEnv) (InsertConfig, error) {
-	ret := InsertConfig{}
+func (cfg *Config) GetInsert(values *EnvInsert) (ConfigInsert, error) {
+	ret := ConfigInsert{
+		Table:      cfg.Insert.Table,
+		IDFunc:     cfg.Insert.IDFunc,
+		ClickHouse: &cfg.ClickHouse,
+	}
 
-	for _, o := range cfg.Insert.TableOverride {
+	for _, o := range cfg.OverrideInsert {
 		if o.WhenExpr == nil {
 			continue
 		}
@@ -37,21 +35,19 @@ func (cfg *Config) InsertConfig(values *InsertEnv) (InsertConfig, error) {
 		if err != nil {
 			return ret, err
 		}
+
 		if cast.ToBool(result) {
-			ret.Table = mergeAny(cfg.Insert.Table, o.Table)
-			ret.IDFunc = mergeAny(cfg.Insert.IDFunc, o.IDFunc)
-			ret.ClickHouse = *mergeClickHouse(&cfg.ClickHouse, cfg.Insert.ClickHouse, o.ClickHouse)
+			ret.Table = mergeAny(ret.Table, o.Table)
+			ret.IDFunc = mergeAny(ret.IDFunc, o.IDFunc)
+			ret.ClickHouse = mergeClickHouse(ret.ClickHouse, o.ClickHouse)
 			return ret, nil
 		}
 	}
 
-	ret.Table = mergeAny(cfg.Insert.Table)
-	ret.IDFunc = mergeAny(cfg.Insert.IDFunc)
-	ret.ClickHouse = *mergeClickHouse(&cfg.ClickHouse, cfg.Insert.ClickHouse)
 	return ret, nil
 }
 
-func (env *InsertEnv) WithRequest(r *http.Request) *InsertEnv {
+func (env *EnvInsert) WithRequest(r *http.Request) *EnvInsert {
 	for k := range r.URL.Query() {
 		env.GetParams[k] = r.URL.Query().Get(k)
 	}

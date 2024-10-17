@@ -46,8 +46,8 @@ func (rcv *PrometheusRemoteWrite) ServeHTTP(w http.ResponseWriter, r *http.Reque
 		return
 	}
 
-	insertCfg, err := rcv.opts.Config.InsertConfig(
-		config.NewInsertEnv().WithRequest(r),
+	insertCfg, err := rcv.opts.Config.GetInsert(
+		config.NewEnvInsert().WithRequest(r),
 	)
 	if err != nil {
 		zap.L().Error("can't get insert config", zap.Error(err))
@@ -61,7 +61,7 @@ func (rcv *PrometheusRemoteWrite) ServeHTTP(w http.ResponseWriter, r *http.Reque
 	scope.QueryWith(ctx, zap.String("query", qq))
 	defer scope.QueryFinish(ctx)
 
-	chRequest, err := query.NewRequest(ctx, insertCfg.ClickHouse, query.Opts{})
+	chRequest, err := query.NewRequest(ctx, *insertCfg.ClickHouse, query.Opts{})
 	if err != nil {
 		zap.L().Error("can't create request to clickhouse", zap.Error(err))
 		http.Error(w, err.Error(), http.StatusBadGateway)
