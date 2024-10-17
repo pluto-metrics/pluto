@@ -4,6 +4,7 @@ import (
 	"bufio"
 	"bytes"
 	"context"
+	"errors"
 	"io"
 	"maps"
 	"mime/multipart"
@@ -143,7 +144,9 @@ func (q *Querier) Select(ctx context.Context, sortSeries bool, selectHints *stor
 
 	chResponse, err := chRequest.Finish()
 	if err != nil {
-		zap.L().Error("can't finish request to clickhouse", zap.Error(err))
+		if !errors.Is(err, context.Canceled) {
+			zap.L().Error("can't finish request to clickhouse", zap.Error(err))
+		}
 		return errorSeriesSet(err)
 	}
 	defer chResponse.Close()
