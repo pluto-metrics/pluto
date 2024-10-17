@@ -4,6 +4,7 @@ import (
 	"bufio"
 	"context"
 
+	"github.com/pluto-metrics/pluto/pkg/config"
 	"github.com/pluto-metrics/pluto/pkg/scope"
 	"github.com/pluto-metrics/pluto/pkg/sql"
 	"github.com/pluto-metrics/rowbinary"
@@ -17,6 +18,11 @@ import (
 
 // LabelValues returns all potential values for a label name.
 func (q *Querier) LabelValues(ctx context.Context, label string, hints *storage.LabelHints, matchers ...*labels.Matcher) ([]string, annotations.Annotations, error) {
+	seriesCfg, err := q.config.GetSeries(&config.EnvSeries{Limit: hints.Limit})
+	if err != nil {
+		return nil, nil, err
+	}
+
 	now := timeNow()
 	start := now.Add(-q.config.Select.AutocompleteLookback).UnixMilli()
 	end := now.UnixMilli()
@@ -40,7 +46,7 @@ func (q *Querier) LabelValues(ctx context.Context, label string, hints *storage.
 		FORMAT RowBinary
 	`, map[string]interface{}{
 		"label": label,
-		"table": q.config.Select.TableSeries,
+		"table": seriesCfg.Table,
 		"where": where,
 	})
 	if err != nil {
@@ -50,7 +56,7 @@ func (q *Querier) LabelValues(ctx context.Context, label string, hints *storage.
 	scope.QueryWith(ctx, zap.String("query", qq))
 	defer scope.QueryFinish(ctx)
 
-	chRequest, err := q.request(ctx, qq)
+	chRequest, err := q.request(ctx, seriesCfg.ClickHouse, qq)
 	if err != nil {
 		return nil, nil, err
 	}

@@ -5,10 +5,10 @@ import (
 )
 
 type nullable interface {
-	map[string]string | *vm.Program
+	map[string]string | *vm.Program | []string
 }
 
-func mergeAny[T comparable](values ...T) T {
+func mergeZero[T comparable](values ...T) T {
 	var ret T
 	for i := len(values) - 1; i >= 0; i-- {
 		if values[i] != ret {
@@ -18,7 +18,7 @@ func mergeAny[T comparable](values ...T) T {
 	return ret
 }
 
-func merge[T nullable](values ...T) T {
+func mergeNil[T nullable](values ...T) T {
 	for i := len(values) - 1; i >= 0; i-- {
 		if values[i] != nil {
 			return values[i]
@@ -34,10 +34,10 @@ func mergeClickHouse(values ...*ClickHouse) *ClickHouse {
 		if values[i] == nil {
 			continue
 		}
-		ret.DSN = mergeAny(values[i].DSN, ret.DSN)
-		ret.Params = merge(values[i].Params, ret.Params)
-		ret.QueryLog.WhenStr = mergeAny(values[i].QueryLog.WhenStr, ret.QueryLog.WhenStr)
-		ret.QueryLog.WhenExpr = merge(values[i].QueryLog.WhenExpr, ret.QueryLog.WhenExpr)
+		ret.DSN = mergeZero(values[i].DSN, ret.DSN)
+		ret.Params = mergeNil(values[i].Params, ret.Params)
+		ret.QueryLog.WhenStr = mergeZero(values[i].QueryLog.WhenStr, ret.QueryLog.WhenStr)
+		ret.QueryLog.WhenExpr = mergeNil(values[i].QueryLog.WhenExpr, ret.QueryLog.WhenExpr)
 	}
 	return ret
 }

@@ -11,6 +11,8 @@ import (
 	"slices"
 	"time"
 
+	"github.com/jinzhu/copier"
+	"github.com/pluto-metrics/pluto/pkg/config"
 	"github.com/pluto-metrics/pluto/pkg/query"
 	"github.com/pluto-metrics/pluto/pkg/scope"
 	"github.com/pluto-metrics/pluto/pkg/sql"
@@ -26,7 +28,7 @@ var timeNow = time.Now
 
 // Select returns a set of series that matches the given label matchers.
 func (q *Querier) Select(ctx context.Context, sortSeries bool, selectHints *storage.SelectHints, labelsMatcher ...*labels.Matcher) storage.SeriesSet {
-	seriesMap, err := q.lookup(ctx, selectHints.Start, selectHints.End, labelsMatcher)
+	seriesMap, err := q.selectSeries(ctx, selectHints, labelsMatcher)
 	if err != nil {
 		zap.L().Error("can't find series", zap.Error(err))
 		return errorSeriesSet(err)
@@ -39,6 +41,17 @@ func (q *Querier) Select(ctx context.Context, sortSeries bool, selectHints *stor
 	if selectHints != nil && selectHints.Func == "series" {
 		// /api/v1/series?match[]=...
 		return newLabelsSeriesSet(slices.Collect(maps.Values(seriesMap)))
+	}
+
+	// select config with overrides
+	envSamples := config.EnvSamples{}
+	if err := copier.Copy(&envSamples, selectHints); err != nil {
+		return errorSeriesSet(err)
+	}
+
+	samplesCfg, err := q.config.GetSamples(&envSamples)
+	if err != nil {
+		return errorSeriesSet(err)
 	}
 
 	var step int64 = 1000 // 1 second
@@ -54,17 +67,16 @@ func (q *Querier) Select(ctx context.Context, sortSeries bool, selectHints *stor
 		SELECT {{.id_hash}} as id_hash, min(timestamp), argMin(value, timestamp)
 		FROM {{.table}}
 		WHERE id IN ids
-			AND timestamp >= {{.start|quote}}-{{.step|quote}}-{{.lookbackDelta}}
-			AND timestamp <= {{.end|quote}}+{{.lookbackDelta}}
+			AND timestamp >= {{.start|quote}}-{{.step|quote}}
+			AND timestamp <= {{.end|quote}}
 		GROUP BY id_hash, intDiv(timestamp-{{.start|quote}}, {{.step|quote}})
 		FORMAT RowBinary
 	`, map[string]interface{}{
-		"id_hash":       unhash.SelectColumn("id"),
-		"table":         q.config.Select.TableSamples,
-		"start":         selectHints.Start,
-		"end":           selectHints.End,
-		"step":          step,
-		"lookbackDelta": q.config.Prometheus.LookbackDelta.Milliseconds(),
+		"id_hash": unhash.SelectColumn("id"),
+		"table":   samplesCfg.Table,
+		"start":   selectHints.Start,
+		"end":     selectHints.End,
+		"step":    step,
 	})
 	if err != nil {
 		zap.L().Error("can't create request to clickhouse", zap.Error(err))
@@ -126,7 +138,7 @@ func (q *Querier) Select(ctx context.Context, sortSeries bool, selectHints *stor
 		return createErr(err)
 	}
 
-	chRequest, err := query.NewRequest(ctx, q.config.ClickHouse, query.Opts{
+	chRequest, err := query.NewRequest(ctx, *samplesCfg.ClickHouse, query.Opts{
 		Headers: map[string]string{
 			"Content-Type": reqWriter.FormDataContentType(),
 		},

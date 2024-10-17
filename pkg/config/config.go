@@ -29,11 +29,11 @@ type ConfigInsert struct {
 }
 
 type ConfigSeries struct {
-	Table                   string        `yaml:"table"`
-	AutocompleteLookback    time.Duration `yaml:"autocomplete_lookback"`
-	SeriesPartitionMs       int64         `yaml:"series_partition_ms"`
-	SeriesMaterializeLabels []string      `yaml:"series_materialize_labels"`
-	ClickHouse              *ClickHouse   `yaml:"clickhouse"`
+	Table                    string        `yaml:"table"`
+	AutocompleteLookback     time.Duration `yaml:"autocomplete_lookback"`
+	SeriesPartitionMs        int64         `yaml:"series_partition_ms"`
+	SeriesMaterializedLabels []string      `yaml:"series_materialized_labels"`
+	ClickHouse               *ClickHouse   `yaml:"clickhouse"`
 }
 
 type ConfigSamples struct {
@@ -59,7 +59,7 @@ type Config struct {
 		SeriesPartitionMs    int64         `yaml:"series_partition_ms" default:"86400000"`
 		// https://clickhouse.com/docs/knowledgebase/improve-map-performance
 		// column names should be label_<label_name>
-		SeriesMaterializeLabels []string `yaml:"series_materialize_labels"`
+		SeriesMaterializedLabels []string `yaml:"series_materialize_labels"`
 	} `yaml:"select"`
 
 	Prometheus struct {

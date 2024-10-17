@@ -2,9 +2,6 @@ package config
 
 import (
 	"net/http"
-
-	"github.com/expr-lang/expr"
-	"github.com/spf13/cast"
 )
 
 type EnvInsert struct {
@@ -27,18 +24,14 @@ func (cfg *Config) GetInsert(values *EnvInsert) (ConfigInsert, error) {
 	}
 
 	for _, o := range cfg.OverrideInsert {
-		if o.WhenExpr == nil {
-			continue
-		}
-
-		result, err := expr.Run(o.WhenExpr, values)
+		result, err := o.When(values)
 		if err != nil {
 			return ret, err
 		}
 
-		if cast.ToBool(result) {
-			ret.Table = mergeAny(ret.Table, o.Table)
-			ret.IDFunc = mergeAny(ret.IDFunc, o.IDFunc)
+		if result {
+			ret.Table = mergeZero(ret.Table, o.Table)
+			ret.IDFunc = mergeZero(ret.IDFunc, o.IDFunc)
 			ret.ClickHouse = mergeClickHouse(ret.ClickHouse, o.ClickHouse)
 			return ret, nil
 		}

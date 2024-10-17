@@ -5,17 +5,30 @@ import (
 	"context"
 	"sort"
 
+	"github.com/jinzhu/copier"
+	"github.com/pluto-metrics/pluto/pkg/config"
 	"github.com/pluto-metrics/pluto/pkg/scope"
 	"github.com/pluto-metrics/pluto/pkg/sql"
 	"github.com/pluto-metrics/rowbinary"
 	"github.com/pluto-metrics/rowbinary/schema"
 	"github.com/prometheus/prometheus/model/labels"
+	"github.com/prometheus/prometheus/storage"
 	"go.uber.org/zap"
 )
 
-func (q *Querier) lookup(ctx context.Context, start, end int64, matchers []*labels.Matcher) (map[string]labels.Labels, error) {
+func (q *Querier) selectSeries(ctx context.Context, selectHints *storage.SelectHints, matchers []*labels.Matcher) (map[string]labels.Labels, error) {
+	envSeries := config.EnvSeries{}
+	if err := copier.Copy(&envSeries, selectHints); err != nil {
+		return nil, err
+	}
+
+	seriesCfg, err := q.config.GetSeries(&envSeries)
+	if err != nil {
+		return nil, err
+	}
+
 	where := sql.NewWhere()
-	q.whereSeriesTimeRange(ctx, where, start, end)
+	q.whereSeriesTimeRange(ctx, where, selectHints.Start, selectHints.End)
 	q.whereMatchLabels(ctx, where, matchers)
 
 	qq, err := sql.Template(`
@@ -25,7 +38,7 @@ func (q *Querier) lookup(ctx context.Context, start, end int64, matchers []*labe
 		GROUP BY id
 		FORMAT RowBinary
 	`, map[string]interface{}{
-		"table": q.config.Select.TableSeries,
+		"table": seriesCfg.Table,
 		"where": where,
 	})
 	if err != nil {
@@ -36,7 +49,7 @@ func (q *Querier) lookup(ctx context.Context, start, end int64, matchers []*labe
 	scope.QueryWith(ctx, zap.String("query", qq))
 	defer scope.QueryFinish(ctx)
 
-	chRequest, err := q.request(ctx, qq)
+	chRequest, err := q.request(ctx, seriesCfg.ClickHouse, qq)
 	if err != nil {
 		return nil, err
 	}

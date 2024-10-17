@@ -4,6 +4,7 @@ import (
 	"bufio"
 	"context"
 
+	"github.com/pluto-metrics/pluto/pkg/config"
 	"github.com/pluto-metrics/pluto/pkg/scope"
 	"github.com/pluto-metrics/pluto/pkg/sql"
 	"github.com/pluto-metrics/rowbinary"
@@ -17,7 +18,11 @@ import (
 
 // LabelNames returns all the unique label names present in the block in sorted order.
 func (q *Querier) LabelNames(ctx context.Context, hints *storage.LabelHints, matchers ...*labels.Matcher) ([]string, annotations.Annotations, error) {
-	// @TODO optimize_functions_to_subcolumns
+	seriesCfg, err := q.config.GetSeries(&config.EnvSeries{Limit: hints.Limit})
+	if err != nil {
+		return nil, nil, err
+	}
+
 	now := timeNow()
 	start := now.Add(-q.config.Select.AutocompleteLookback).UnixMilli()
 	end := now.UnixMilli()
@@ -34,7 +39,7 @@ func (q *Querier) LabelNames(ctx context.Context, hints *storage.LabelHints, mat
 		ORDER BY value
 		FORMAT RowBinary
 	`, map[string]interface{}{
-		"table": q.config.Select.TableSeries,
+		"table": seriesCfg.Table,
 		"where": where,
 	})
 	if err != nil {
@@ -45,7 +50,7 @@ func (q *Querier) LabelNames(ctx context.Context, hints *storage.LabelHints, mat
 	scope.QueryWith(ctx, zap.String("query", qq))
 	defer scope.QueryFinish(ctx)
 
-	chRequest, err := q.request(ctx, qq)
+	chRequest, err := q.request(ctx, seriesCfg.ClickHouse, qq)
 	if err != nil {
 		return nil, nil, err
 	}
