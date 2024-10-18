@@ -66,7 +66,7 @@ func (pb *RawPB) Parse(body []byte) error {
 			if err != nil {
 				return err
 			}
-			if pb.schema[num].varint != nil {
+			if int(num) < len(pb.schema) && pb.schema[num].varint != nil {
 				if err := pb.schema[num].varint(v); err != nil {
 					return err
 				}
@@ -76,7 +76,7 @@ func (pb *RawPB) Parse(body []byte) error {
 			if err != nil {
 				return err
 			}
-			if pb.schema[num].fixed64 != nil {
+			if int(num) < len(pb.schema) && pb.schema[num].fixed64 != nil {
 				if err := pb.schema[num].fixed64(v); err != nil {
 					return err
 				}
@@ -86,7 +86,7 @@ func (pb *RawPB) Parse(body []byte) error {
 			if err != nil {
 				return err
 			}
-			if pb.schema[num].bytes != nil {
+			if int(num) < len(pb.schema) && pb.schema[num].bytes != nil {
 				err = pb.schema[num].bytes(v)
 				if err != nil {
 					return err
@@ -98,7 +98,7 @@ func (pb *RawPB) Parse(body []byte) error {
 			if err != nil {
 				return err
 			}
-			if pb.schema[num].fixed32 != nil {
+			if int(num) < len(pb.schema) && pb.schema[num].fixed32 != nil {
 				if err := pb.schema[num].fixed32(v); err != nil {
 					return err
 				}
