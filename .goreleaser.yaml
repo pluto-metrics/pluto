@@ -26,27 +26,25 @@ builds:
       - windows
       - darwin
 
-  nfpms:
+nfpms:
   - id: pluto
     package_name: pluto
     file_name_template: "{{ .ConventionalFileName }}"
     builds:
       - pluto
-    if: '{{ eq .Os "linux" }}'
     vendor: Drum Roll Inc.
 
     # Your app's homepage.
     #
     # Default: inferred from global metadata.
-    homepage: https://example.com/
+    homepage: https://github.com/pluto-metrics/pluto
 
     # Your app's maintainer (probably you).
     #
     # Default: inferred from global metadata.
-    maintainer: Drummer <drum-roll@example.com>
+    maintainer: Roman Lomonosov <r.lomonosov@gmail.com>
     description: |-
-      Drum rolls installer package.
-      Software to create fast and easy drum rolls.
+      ClickHouse-based long-term storage for Prometheus
 
     # Your app's license.
     #
@@ -75,8 +73,8 @@ builds:
 
     contents:
       # Basic file that applies to all packagers
-      - src: path/to/foo
-        dst: /usr/bin/foo
+      - src: pluto
+        dst: /usr/bin/pluto
 
 archives:
   - format: tar.gz
