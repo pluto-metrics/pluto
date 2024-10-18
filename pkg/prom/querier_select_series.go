@@ -29,7 +29,7 @@ func (q *Querier) selectSeries(ctx context.Context, selectHints *storage.SelectH
 
 	where := sql.NewWhere()
 	q.whereSeriesTimeRange(ctx, where, selectHints.Start, selectHints.End)
-	q.whereMatchLabels(ctx, where, matchers)
+	q.whereMatchLabels(ctx, seriesCfg, where, matchers)
 
 	qq, err := sql.Template(`
 		SELECT id, any(labels)

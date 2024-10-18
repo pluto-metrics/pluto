@@ -24,12 +24,12 @@ func (q *Querier) LabelNames(ctx context.Context, hints *storage.LabelHints, mat
 	}
 
 	now := timeNow()
-	start := now.Add(-q.config.Select.AutocompleteLookback).UnixMilli()
+	start := now.Add(-seriesCfg.AutocompleteLookback).UnixMilli()
 	end := now.UnixMilli()
 
 	where := sql.NewWhere()
 	q.whereSeriesTimeRange(ctx, where, start, end)
-	q.whereMatchLabels(ctx, where, matchers)
+	q.whereMatchLabels(ctx, seriesCfg, where, matchers)
 
 	qq, err := sql.Template(`
 		SELECT arrayJoin(mapKeys(labels)) AS value
