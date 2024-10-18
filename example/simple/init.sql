@@ -15,7 +15,8 @@ CREATE TABLE samples (
 )
 ENGINE = ReplacingMergeTree()
 ORDER BY (id, timestamp)
-PARTITION BY timestamp-timestamp%86400000; -- 1 day in ms
+PARTITION BY intDiv(timestamp,86400000)*86400000 -- 1 day in ms
+SETTINGS min_age_to_force_merge_seconds = 3600, min_age_to_force_merge_on_partition_only = 1;
 
 CREATE MATERIALIZED VIEW samples_mv TO samples AS
 SELECT id, timestamp, value
@@ -31,7 +32,8 @@ CREATE TABLE series (
 )
 ENGINE = AggregatingMergeTree()
 ORDER BY (name, id, labels)
-PARTITION BY timestamp_min-timestamp_min%86400000; -- 1 day in ms
+PARTITION BY intDiv(timestamp_min,86400000)*86400000 -- 1 day in ms
+SETTINGS min_age_to_force_merge_seconds = 3600, min_age_to_force_merge_on_partition_only = 1;
 
 CREATE MATERIALIZED VIEW series_mv TO series AS
 SELECT name, labels, id, timestamp
