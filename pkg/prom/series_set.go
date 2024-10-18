@@ -17,11 +17,6 @@ type sample struct {
 	value     float64
 }
 
-type hints struct {
-	step     int64
-	function string
-}
-
 // SeriesIterator iterates over the data of a time series.
 type seriesIterator struct {
 	series  *series
@@ -30,8 +25,9 @@ type seriesIterator struct {
 
 // Series represents a single time series.
 type series struct {
-	labels  labels.Labels
-	samples []sample
+	labels     labels.Labels
+	samples    []sample
+	isQuantile bool // presumably the series is used in calculating the quantile
 }
 
 // SeriesSet contains a set of series.
@@ -44,7 +40,7 @@ type seriesSet struct {
 
 var _ storage.SeriesSet = &seriesSet{}
 
-func makeSeriesSet(data []series, hints hints) (storage.SeriesSet, error) {
+func makeSeriesSet(data []series, hints *storage.SelectHints) (storage.SeriesSet, error) {
 	ss := &seriesSet{data: data, current: -1}
 	if len(ss.data) == 0 {
 		return ss, nil

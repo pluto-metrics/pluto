@@ -5,9 +5,30 @@ import (
 	"strings"
 
 	"github.com/prometheus/prometheus/model/labels"
+	"github.com/prometheus/prometheus/storage"
 )
 
-func labelsMapKeyLE(lb labels.Labels) (string, string) {
+func isHistogram(data []series) bool {
+	if len(data) < 2 {
+		return false
+	}
+
+	for i := 0; i < len(data); i++ {
+		isBucket := false
+		for _, l := range data[i].labels {
+			if l.Name == "le" {
+				isBucket = true
+			}
+		}
+		if !isBucket {
+			return false
+		}
+	}
+
+	return true
+}
+
+func keyHistogram(lb labels.Labels) (string, string) {
 	v := new(strings.Builder)
 	le := ""
 
@@ -24,21 +45,21 @@ func labelsMapKeyLE(lb labels.Labels) (string, string) {
 	return v.String(), le
 }
 
-func quantileGroupCleanup(group []*series) {
+func hackSingleHistogram(h []*series, hints *storage.SelectHints) {
 	// slow variant for test
 	// @TODO
 	tsMap := make(map[int64]int)
-	for _, s := range group {
+	for _, s := range h {
 		for i := 0; i < len(s.samples); i++ {
 			tsMap[s.samples[i].timestamp]++
 		}
 	}
 
 	// keep only in many series
-	for _, s := range group {
+	for _, s := range h {
 		n := make([]sample, 0, len(s.samples))
 		for i := 0; i < len(s.samples); i++ {
-			if tsMap[s.samples[i].timestamp] == len(group) {
+			if tsMap[s.samples[i].timestamp] == len(h) {
 				n = append(n, s.samples[i])
 			}
 		}
@@ -46,26 +67,12 @@ func quantileGroupCleanup(group []*series) {
 	}
 }
 
-func hackSeriesNanPoint(s *series, hints hints) {
-	if hints.step == 0 {
-		return
-	}
-	if hints.function != "rate" {
-		return
-	}
-	if len(s.samples) < 1 {
-		return
-	}
-	s.samples = append(s.samples, sample{timestamp: s.samples[len(s.samples)-1].timestamp + hints.step, value: math.NaN()})
-}
-
-func hackSeries(data []series, hints hints) []series {
+func hackHistogram(data []series, hints *storage.SelectHints) []series {
 	groups := make(map[string][]*series)
 
 	for i := 0; i < len(data); i++ {
-		k, le := labelsMapKeyLE(data[i].labels)
+		k, le := keyHistogram(data[i].labels)
 		if le == "" {
-			hackSeriesNanPoint(&data[i], hints)
 			continue
 		}
 		groups[k] = append(groups[k], &data[i])
@@ -74,12 +81,34 @@ func hackSeries(data []series, hints hints) []series {
 	// cleanup each group
 	for _, g := range groups {
 		if len(g) < 2 {
-			if len(g) == 1 {
-				hackSeriesNanPoint(g[0], hints)
-			}
 			continue
 		}
-		quantileGroupCleanup(g)
+		hackSingleHistogram(g, hints)
 	}
+	return data
+}
+
+func hackRate(data []series, hints *storage.SelectHints) []series {
+	for i := 0; i < len(data); i++ {
+		if len(data[i].samples) == 0 {
+			continue
+		}
+		data[i].samples = append(data[i].samples, sample{
+			timestamp: data[i].samples[len(data[i].samples)-1].timestamp + hints.Step,
+			value:     math.NaN(),
+		})
+	}
+	return data
+}
+
+func hackSeries(data []series, hints *storage.SelectHints) []series {
+	if isHistogram(data) {
+		return hackHistogram(data, hints)
+	}
+
+	if hints.Step > 0 && hints.Func == "rate" {
+		return hackRate(data, hints)
+	}
+
 	return data
 }
