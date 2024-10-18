@@ -26,6 +26,58 @@ builds:
       - windows
       - darwin
 
+  nfpms:
+  - id: pluto
+    package_name: pluto
+    file_name_template: "{{ .ConventionalFileName }}"
+    builds:
+      - pluto
+    if: '{{ eq .Os "linux" }}'
+    vendor: Drum Roll Inc.
+
+    # Your app's homepage.
+    #
+    # Default: inferred from global metadata.
+    homepage: https://example.com/
+
+    # Your app's maintainer (probably you).
+    #
+    # Default: inferred from global metadata.
+    maintainer: Drummer <drum-roll@example.com>
+    description: |-
+      Drum rolls installer package.
+      Software to create fast and easy drum rolls.
+
+    # Your app's license.
+    #
+    # Default: inferred from global metadata.
+    license: Apache 2.0
+
+    # Formats to be generated.
+    formats:
+      - apk
+      - deb
+      - rpm
+      - termux.deb
+      - archlinux
+
+    # Umask to be used on files without explicit mode set. (overridable)
+    #
+    # Default: 0o002 (will remove world-writable permissions).
+    umask: 0o002
+
+    # Packages your package depends on. (overridable)
+    dependencies:
+      - git
+      - zsh
+
+    bindir: /usr/bin
+
+    contents:
+      # Basic file that applies to all packagers
+      - src: path/to/foo
+        dst: /usr/bin/foo
+
 archives:
   - format: tar.gz
     # this name template makes the OS and Arch compatible with the results of `uname`.
