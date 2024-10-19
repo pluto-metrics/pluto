@@ -32,45 +32,20 @@ nfpms:
     file_name_template: "{{ .ConventionalFileName }}"
     builds:
       - pluto
-    vendor: Drum Roll Inc.
-
-    # Your app's homepage.
-    #
-    # Default: inferred from global metadata.
+    vendor: pluto-metrics
     homepage: https://github.com/pluto-metrics/pluto
-
-    # Your app's maintainer (probably you).
-    #
-    # Default: inferred from global metadata.
     maintainer: Roman Lomonosov <r.lomonosov@gmail.com>
     description: |-
       ClickHouse-based long-term storage for Prometheus
-
-    # Your app's license.
-    #
-    # Default: inferred from global metadata.
     license: Apache 2.0
-
-    # Formats to be generated.
     formats:
       - apk
       - deb
       - rpm
       - termux.deb
       - archlinux
-
-    # Umask to be used on files without explicit mode set. (overridable)
-    #
-    # Default: 0o002 (will remove world-writable permissions).
     umask: 0o002
-
-    # Packages your package depends on. (overridable)
-    dependencies:
-      - git
-      - zsh
-
     bindir: /usr/bin
-
     contents:
       # Basic file that applies to all packagers
       - src: pluto
