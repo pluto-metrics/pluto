@@ -19,7 +19,7 @@ import (
 func main() {
 	var configFilename string
 	var development bool
-	flag.StringVar(&configFilename, "config", "config.yaml", "Config filename")
+	flag.StringVar(&configFilename, "config", "/etc/pluto/config.yaml", "Config filename")
 	flag.BoolVar(&development, "dev", false, "Use development config by default")
 	flag.Parse()
 

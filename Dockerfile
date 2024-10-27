@@ -26,4 +26,6 @@ WORKDIR /app
 
 COPY --from=builder /build/pluto /app/pluto
 
+COPY example/simple/config.yaml /etc/pluto/config.yaml
+
 CMD ["/app/pluto"]
