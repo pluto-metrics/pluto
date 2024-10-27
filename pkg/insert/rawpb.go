@@ -7,7 +7,7 @@ import (
 
 	"github.com/pluto-metrics/pluto/pkg/insert/id"
 	"github.com/pluto-metrics/pluto/pkg/insert/labels"
-	"github.com/pluto-metrics/pluto/pkg/rawpb"
+	"github.com/pluto-metrics/rawpb"
 	"github.com/pluto-metrics/rowbinary"
 	"github.com/pluto-metrics/rowbinary/schema"
 )
@@ -82,17 +82,17 @@ func payloadToRowBinary(raw []byte, w io.Writer, h id.Provider) error {
 	defer pbTimeseriesPool.Put(ts)
 
 	parser := rawpb.New(
-		rawpb.FieldNested(1, rawpb.New(
+		rawpb.Message(1, rawpb.New(
 			rawpb.Begin(ts.begin),
-			rawpb.FieldNested(1, rawpb.New(
+			rawpb.Message(1, rawpb.New(
 				rawpb.Begin(ts.labelBegin),
-				rawpb.FieldBytes(1, ts.labelName),
-				rawpb.FieldBytes(2, ts.labelValue),
+				rawpb.Bytes(1, ts.labelName),
+				rawpb.Bytes(2, ts.labelValue),
 			)),
-			rawpb.FieldNested(2, rawpb.New(
+			rawpb.Message(2, rawpb.New(
 				rawpb.Begin(ts.sampleBegin),
-				rawpb.FieldFloat64(1, ts.sampleValue),
-				rawpb.FieldInt64(2, ts.sampleTimestamp),
+				rawpb.Double(1, ts.sampleValue),
+				rawpb.Int64(2, ts.sampleTimestamp),
 			)),
 			rawpb.End(func() error {
 				if len(ts.Labels) == 0 || len(ts.Samples) == 0 {
