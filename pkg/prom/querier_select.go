@@ -62,6 +62,11 @@ func (q *Querier) Select(ctx context.Context, sortSeries bool, selectHints *stor
 	// don't fetch full ids, use hash
 	unhash := NewHashSelector(maps.Keys(seriesMap))
 
+	timestampDiv := int64(1)
+	if samplesCfg.SamplesTimestampUInt32 {
+		timestampDiv = 1000
+	}
+
 	// fetch data by ids
 	qq, err := sql.Template(`
 		SELECT {{.id_hash}} as id_hash, min(timestamp), argMin(value, timestamp)
@@ -74,9 +79,9 @@ func (q *Querier) Select(ctx context.Context, sortSeries bool, selectHints *stor
 	`, map[string]interface{}{
 		"id_hash": unhash.SelectColumn("id"),
 		"table":   samplesCfg.Table,
-		"start":   selectHints.Start,
-		"end":     selectHints.End,
-		"step":    step,
+		"start":   selectHints.Start / timestampDiv,
+		"end":     selectHints.End / timestampDiv,
+		"step":    step / timestampDiv,
 	})
 	if err != nil {
 		zap.L().Error("can't create request to clickhouse", zap.Error(err))
@@ -181,14 +186,29 @@ func (q *Querier) Select(ctx context.Context, sortSeries bool, selectHints *stor
 
 	r := schema.NewReader(bufio.NewReader(chResponse)).
 		Format(schema.RowBinary).
-		Column(unhash.ColumnType()). // id
-		Column(rowbinary.Int64).     // timestamp
-		Column(rowbinary.Float64)    // value
+		Column(unhash.ColumnType()) // id
+
+	if samplesCfg.SamplesTimestampUInt32 {
+		r = r.Column(rowbinary.UInt32) // timestamp uint32
+	} else {
+		r = r.Column(rowbinary.Int64) // timestamp int64 with ms
+	}
+	r = r.Column(rowbinary.Float64) // value
+
+	var id string
+	var timestamp int64
+	var timestamp32 uint32
+	var value float64
 
 	for r.Next() {
-		id, _ := unhash.SchemaRead(r)
-		timestamp, _ := schema.Read(r, rowbinary.Int64)
-		value, _ := schema.Read(r, rowbinary.Float64)
+		id, _ = unhash.SchemaRead(r)
+		if samplesCfg.SamplesTimestampUInt32 {
+			timestamp32, _ = schema.Read(r, rowbinary.UInt32)
+			timestamp = int64(timestamp32) * 1000
+		} else {
+			timestamp, _ = schema.Read(r, rowbinary.Int64)
+		}
+		value, _ = schema.Read(r, rowbinary.Float64)
 		if r.Err() != nil {
 			zap.L().Error("can't read row from clickhouse", zap.Error(r.Err()))
 			return errorSeriesSet(r.Err())

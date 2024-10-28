@@ -8,8 +8,9 @@ func NewEnvSamples() *EnvSamples {
 
 func (cfg *Config) GetSamples(values *EnvSamples) (ConfigSamples, error) {
 	ret := ConfigSamples{
-		Table:      cfg.Select.TableSamples,
-		ClickHouse: &cfg.ClickHouse,
+		Table:                  cfg.Select.TableSamples,
+		ClickHouse:             &cfg.ClickHouse,
+		SamplesTimestampUInt32: cfg.Select.SamplesTimestampUInt32,
 	}
 
 	for _, o := range cfg.OverrideSamples {
@@ -21,6 +22,7 @@ func (cfg *Config) GetSamples(values *EnvSamples) (ConfigSamples, error) {
 		if result {
 			ret.Table = mergeZero(ret.Table, o.Table)
 			ret.ClickHouse = mergeClickHouse(ret.ClickHouse, o.ClickHouse)
+			ret.SamplesTimestampUInt32 = mergeZero(ret.SamplesTimestampUInt32, o.SamplesTimestampUInt32)
 			return ret, nil
 		}
 	}

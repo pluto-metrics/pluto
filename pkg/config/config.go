@@ -37,8 +37,9 @@ type ConfigSeries struct {
 }
 
 type ConfigSamples struct {
-	Table      string      `yaml:"table"`
-	ClickHouse *ClickHouse `yaml:"clickhouse"`
+	Table                  string      `yaml:"table"`
+	SamplesTimestampUInt32 bool        `yaml:"samples_timestamp_uint32"`
+	ClickHouse             *ClickHouse `yaml:"clickhouse"`
 }
 
 type Config struct {
@@ -60,6 +61,7 @@ type Config struct {
 		// https://clickhouse.com/docs/knowledgebase/improve-map-performance
 		// column names should be label_<label_name>
 		SeriesMaterializedLabels []string `yaml:"series_materialize_labels"`
+		SamplesTimestampUInt32   bool     `yaml:"samples_timestamp_uint32"`
 	} `yaml:"select"`
 
 	Prometheus struct {
