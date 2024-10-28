@@ -69,7 +69,7 @@ func (q *Querier) Select(ctx context.Context, sortSeries bool, selectHints *stor
 
 	// fetch data by ids
 	qq, err := sql.Template(`
-		SELECT {{.id_hash}} as id_hash, min(timestamp), argMin(value, timestamp)
+		SELECT {{.id_hash}} as id_hash, min(timestamp), maxArgMin(value, timestamp)
 		FROM {{.table}}
 		WHERE id IN ids
 			AND timestamp >= {{.start|quote}}-{{.step|quote}}
