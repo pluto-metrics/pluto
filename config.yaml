@@ -12,33 +12,12 @@ insert:
   listen: 0.0.0.0:9095
   id_func: name_with_sha256
   table: samples_null
-  # clickhouse: {dsn: "", params: "", ...}
-  # table_override:
-  # - table: shard1.samples_null
-  #   when: get_param("shard") == 1
-  #   clickhouse: {dsn: "", params: "", ...}
-  # - table: shard2.samples_null
-  #   when: get_param("shard") == 2
-  #   clickhouse: {dsn: "", params: "", ...}
-
 
 select:
   table_series: series
-  # series_clickhouse: {dsn: "", params: "", ...}
   table_samples: samples
-  # samples_clickhouse: {dsn: "", params: "", ...}
   autocomplete_lookback: 168h
   series_partition_ms: 86400000
-  # table_series_override:
-  # - table: archive.series
-  #   when: ...
-  #   partition_ms: 86400000
-  #   autocomplete_lookback: 168h
-  #   clickhouse:  {dsn: "", params: "", ...}
-  # table_samples_override:
-  # - table: archive.samples
-  #   when: ...
-  #   clickhouse:  {dsn: "", params: "", ...}
 
 prometheus:
   enabled: true
