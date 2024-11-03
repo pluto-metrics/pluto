@@ -32,7 +32,7 @@ CREATE TABLE series (
 )
 ENGINE = AggregatingMergeTree()
 ORDER BY (name, id)
-PARTITION BY intDiv(timestamp,86400000)*86400000 -- 1 day in ms
+PARTITION BY intDiv(timestamp_min,86400000)*86400000 -- 1 day in ms
 SETTINGS min_age_to_force_merge_seconds = 3600, min_age_to_force_merge_on_partition_only = 1;
 
 CREATE MATERIALIZED VIEW series_mv TO series AS

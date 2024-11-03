@@ -1,9 +1,24 @@
 version: "3.9"
 # docker pull clickhouse/clickhouse-server:24.3.12.75-alpine
 services:
+  vmagent:
+    image: victoriametrics/vmagent:latest
+    restart: always
+    ports:
+    - 8429:8429
+    volumes:
+    - ./data/vmagent/:/vmagentdata/
+    - ./prometheus.yml:/etc/prometheus/prometheus.yml
+    command:
+    - "--promscrape.config=/etc/prometheus/prometheus.yml"
+    - "--remoteWrite.url=http://pluto:9095/api/v1/write?shard=1"
+    - "--remoteWrite.url=http://pluto:9095/api/v1/write?shard=2"
+    - "--remoteWrite.shardByURL=true"
+    - "--remoteWrite.shardByURL.labels=__name__"
+
   pluto:
     build: ../..
-    restart: on-failure:5
+    restart: always
     ports:
     - 9095:9095
     - 9096:9096
@@ -12,12 +27,14 @@ services:
     links:
     - clickhouse
     volumes:
-    - './config.yaml:/app/config.yaml'
+    - './config.yaml:/etc/pluto/config.yaml'
   
   clickhouse:
     image: clickhouse/clickhouse-server:24.3.12.75-alpine
     restart: always
     user: "0"
+    ports:
+    - 8123:8123
     volumes:
     - './data/clickhouse/:/var/lib/clickhouse/'
     - '/etc/localtime:/etc/localtime:ro'

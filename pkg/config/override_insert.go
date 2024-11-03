@@ -6,7 +6,7 @@ import (
 
 type EnvInsert struct {
 	GetParams map[string]string `expr:"GET"`
-	Headers   map[string]string `expr:"GET"`
+	Headers   map[string]string `expr:"HEADER"`
 }
 
 func NewEnvInsert() *EnvInsert {

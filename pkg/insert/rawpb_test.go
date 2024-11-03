@@ -9,6 +9,8 @@ import (
 	"testing"
 
 	"github.com/pluto-metrics/pluto/pkg/insert/id"
+
+	_ "github.com/k0kubun/pp" // just for keep dep
 )
 
 func readFixture(name string) []byte {

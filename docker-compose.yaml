@@ -12,7 +12,7 @@ services:
     links:
     - clickhouse
     volumes:
-    - './example/simple/config.yaml:/app/config.yaml'
+    - './example/simple/config.yaml:/etc/pluto/config.yaml'
   clickhouse:
     image: clickhouse/clickhouse-server:24.3.12.75-alpine
     restart: always

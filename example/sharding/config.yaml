@@ -26,3 +26,13 @@ debug:
   listen: 0.0.0.0:9095
   pprof: true
   metrics: true
+
+override_insert:
+- when: GET["shard"]=="1"
+  clickhouse:
+    params:
+      database: shard1
+- when: GET["shard"]=="2"
+  clickhouse:
+    params:
+      database: shard2
