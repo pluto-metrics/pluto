@@ -1,0 +1,1 @@
+The example uses multiple tables on a single server and join them through a Merge table. However, the same can be done with shards on different servers and Distributed tables.

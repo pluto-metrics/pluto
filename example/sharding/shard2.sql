@@ -1,5 +1,7 @@
 -- table for inserts
-CREATE TABLE samples_null (
+CREATE DATABASE shard1;
+
+CREATE TABLE shard2.samples_null (
 	`id` String,
 	`name` String,
 	`labels` Map(String, String),
@@ -8,7 +10,7 @@ CREATE TABLE samples_null (
 )
 ENGINE = Null();
 
-CREATE TABLE samples (
+CREATE TABLE shard2.samples (
 	`id` String CODEC(ZSTD(3)),
 	`timestamp` Int64 CODEC(Delta(), ZSTD(3)),
 	`value` SimpleAggregateFunction(max, Float64) CODEC(Gorilla, ZSTD(3))
@@ -18,11 +20,11 @@ ORDER BY (id, timestamp)
 PARTITION BY intDiv(timestamp,86400000)*86400000 -- 1 day in ms
 SETTINGS min_age_to_force_merge_seconds = 3600, min_age_to_force_merge_on_partition_only = 1;
 
-CREATE MATERIALIZED VIEW samples_mv TO samples AS
+CREATE MATERIALIZED VIEW shard2.samples_mv TO shard2.samples AS
 SELECT id, timestamp, value
-FROM samples_null;  
+FROM shard2.samples_null;  
 
-CREATE TABLE series (
+CREATE TABLE shard2.series (
 	`name` String,
 	`labels` Map(String, String),
 	`id` String,
@@ -35,6 +37,6 @@ ORDER BY (name, id)
 PARTITION BY intDiv(timestamp,86400000)*86400000 -- 1 day in ms
 SETTINGS min_age_to_force_merge_seconds = 3600, min_age_to_force_merge_on_partition_only = 1;
 
-CREATE MATERIALIZED VIEW series_mv TO series AS
+CREATE MATERIALIZED VIEW shard2.series_mv TO shard2.series AS
 SELECT name, labels, id, timestamp
-FROM samples_null;
+FROM shard2.samples_null;

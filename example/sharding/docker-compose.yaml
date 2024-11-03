@@ -1,0 +1,26 @@
+version: "3.9"
+# docker pull clickhouse/clickhouse-server:24.3.12.75-alpine
+services:
+  pluto:
+    build: ../..
+    restart: on-failure:5
+    ports:
+    - 9095:9095
+    - 9096:9096
+    working_dir: /app
+    command: /app/pluto
+    links:
+    - clickhouse
+    volumes:
+    - './config.yaml:/app/config.yaml'
+  
+  clickhouse:
+    image: clickhouse/clickhouse-server:24.3.12.75-alpine
+    restart: always
+    user: "0"
+    volumes:
+    - './data/clickhouse/:/var/lib/clickhouse/'
+    - '/etc/localtime:/etc/localtime:ro'
+    - './shard1.sql:/docker-entrypoint-initdb.d/shard1.sql'
+    - './shard2.sql:/docker-entrypoint-initdb.d/shard2.sql'
+    - './merge.sql:/docker-entrypoint-initdb.d/merge.sql'
