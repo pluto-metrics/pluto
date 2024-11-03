@@ -395,6 +395,8 @@ github.com/planetscale/vtprotobuf v0.6.1-0.20240319094008-0393e58bdf10 h1:GFCKgm
 github.com/planetscale/vtprotobuf v0.6.1-0.20240319094008-0393e58bdf10/go.mod h1:t/avpk3KcrXxUnYOhZhMXJlSEyie6gQbtLq5NM3loB8=
 github.com/pluto-metrics/prometheus-ui-static v0.2.54-1.1 h1:zesx3+V3DDNwRGtjkOnTWXrB5XFqzTaODZp/Qu7giVc=
 github.com/pluto-metrics/prometheus-ui-static v0.2.54-1.1/go.mod h1:kk8noH+ULGqs9OL22eiuC/qQiYVCWMWkJeAJEN7JmE0=
+github.com/pluto-metrics/rawpb v0.2.0 h1:CM85ooLLeMSD4cKAncc+beaIlIrrpPf5UC8LAU0tsIs=
+github.com/pluto-metrics/rawpb v0.2.0/go.mod h1:sfk82TBBFrsznXT3I2UdfPPazP06WgEF5D4FnclqPuU=
 github.com/pluto-metrics/rawpb v1.0.0 h1:+k+BhLpvZfuaiZRFGtkE5DLlNEK57SSxpAy6cGXvq0E=
 github.com/pluto-metrics/rawpb v1.0.0/go.mod h1:ICmmShiN6jIAvIDeKzpB/2K6pb2EH7RFd8J0ZxZ3fwQ=
 github.com/pluto-metrics/rawpb v1.0.1 h1:0WWta+hPzOEnfUsc5sr3lqJh3S02wRcdY1H+ttutHqo=
