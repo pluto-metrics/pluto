@@ -26,6 +26,31 @@ builds:
       - windows
       - darwin
 
+nfpms:
+  - id: pluto
+    package_name: pluto
+    file_name_template: "{{ .ConventionalFileName }}"
+    builds:
+      - pluto
+    vendor: pluto-metrics
+    homepage: https://github.com/pluto-metrics/pluto
+    maintainer: Roman Lomonosov <r.lomonosov@gmail.com>
+    description: |-
+      ClickHouse-based long-term storage for Prometheus
+    license: Apache 2.0
+    formats:
+      - apk
+      - deb
+      - rpm
+      - termux.deb
+      - archlinux
+    umask: 0o002
+    bindir: /usr/bin
+    contents:
+      - src: config.yaml
+        dst: /etc/pluto/config.yaml
+        type: "config|noreplace"
+
 archives:
   - format: tar.gz
     # this name template makes the OS and Arch compatible with the results of `uname`.
