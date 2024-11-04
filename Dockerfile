@@ -13,6 +13,6 @@ RUN GOOS=${TARGETOS} GOARCH=${TARGETARCH} go build -ldflags="-s -w" -o pluto cmd
 
 FROM --platform=${TARGETPLATFORM} alpine
 COPY --from=compiler /go/src/pluto/pluto /usr/bin/pluto
-COPY example/simple/config.yaml /etc/pluto/config.yaml
+COPY config.yaml /etc/pluto/config.yaml
 
 ENTRYPOINT ["/usr/bin/pluto"]

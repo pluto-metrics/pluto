@@ -1,0 +1,4 @@
+FROM --platform=${TARGETPLATFORM} alpine
+COPY pluto /usr/bin/pluto
+COPY config.yaml /etc/pluto/config.yaml
+ENTRYPOINT ["/usr/bin/pluto"]
