@@ -8,7 +8,6 @@ services:
     - 9095:9095
     - 9096:9096
     working_dir: /app
-    command: /app/pluto
     links:
     - clickhouse
     volumes:
