@@ -1,31 +1,18 @@
-FROM golang:alpine AS builder
+FROM --platform=${BUILDPLATFORM} golang:alpine as compiler
+ARG TARGETOS
+ARG TARGETARCH
+ENV CGO_ENABLED=0
 
-LABEL stage=gobuilder
-
-ENV CGO_ENABLED 0
-
-ENV GOOS linux
-
-WORKDIR /build
-
+WORKDIR /go/src/pluto
 ADD go.mod .
-
 ADD go.sum .
-
 RUN go mod download
-
 COPY . .
 
-RUN go build -ldflags="-s -w" -o pluto cmd/pluto/main.go
+RUN GOOS=${TARGETOS} GOARCH=${TARGETARCH} go build -ldflags="-s -w" -o pluto cmd/pluto/main.go
 
-FROM alpine
-
-RUN apk update --no-cache && apk add --no-cache ca-certificates
-
-WORKDIR /app
-
-COPY --from=builder /build/pluto /app/pluto
-
+FROM --platform=${TARGETPLATFORM} alpine
+COPY --from=compiler /go/src/pluto/pluto /usr/bin/pluto
 COPY example/simple/config.yaml /etc/pluto/config.yaml
 
-CMD ["/app/pluto"]
+ENTRYPOINT ["/usr/bin/pluto"]
