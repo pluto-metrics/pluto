@@ -65,12 +65,11 @@ type Config struct {
 	} `yaml:"select"`
 
 	Prometheus struct {
-		Enabled                    bool          `yaml:"enabled" default:"true"`
-		Listen                     string        `yaml:"listen" default:"0.0.0.0:9096" comment:"listen addr for prometheus ui and api"`
-		ExternalURL                string        `yaml:"external_url" default:"http://127.0.0.1:9096" comment:"allows to set URL for redirect manually"`
-		PageTitle                  string        `yaml:"page_title" default:"Pluto"`
-		LookbackDelta              time.Duration `yaml:"lookback_delta" default:"5m"`
-		RemoteReadConcurrencyLimit int           `yaml:"remote_read_concurrency_limit" default:"10" comment:"concurrently handled remote read requests"`
+		Enabled       bool          `yaml:"enabled" default:"true"`
+		Listen        string        `yaml:"listen" default:"0.0.0.0:9095" comment:"listen addr for prometheus ui and api"`
+		ExternalURL   string        `yaml:"external_url" default:"http://127.0.0.1:9095" comment:"allows to set URL for redirect manually"`
+		PageTitle     string        `yaml:"page_title" default:"Pluto"`
+		LookbackDelta time.Duration `yaml:"lookback_delta" default:"5m"`
 	} `yaml:"prometheus"`
 
 	Debug struct {

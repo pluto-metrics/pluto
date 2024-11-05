@@ -28,6 +28,8 @@ func NewPrometheusRemoteWrite(opts Opts) *PrometheusRemoteWrite {
 }
 
 func (rcv *PrometheusRemoteWrite) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+	metricRemoteWriteRequests.Add(r.Context(), 1)
+
 	if rcv.opts.Config.Insert.CloseConnections {
 		w.Header().Add("Connection", "close")
 	}
@@ -77,7 +79,7 @@ func (rcv *PrometheusRemoteWrite) ServeHTTP(w http.ResponseWriter, r *http.Reque
 		return
 	}
 
-	if err := payloadToRowBinary(reqRaw, chRequest, id.NewNameWithSha256()); err != nil {
+	if err := payloadToRowBinary(ctx, reqRaw, chRequest, id.NewNameWithSha256()); err != nil {
 		zap.L().Error("can't write request to clickhouse", zap.Error(err))
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return

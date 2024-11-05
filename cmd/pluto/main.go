@@ -4,17 +4,38 @@ import (
 	"context"
 	"flag"
 	"log"
+	"net/http"
 	"net/http/pprof"
 
 	"github.com/pluto-metrics/pluto/pkg/config"
 	"github.com/pluto-metrics/pluto/pkg/insert"
 	"github.com/pluto-metrics/pluto/pkg/listen"
 	"github.com/pluto-metrics/pluto/pkg/prom"
+	"github.com/pluto-metrics/pluto/pkg/telemetry"
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/collectors"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
+	"go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp"
+	"go.opentelemetry.io/otel/attribute"
 	"go.uber.org/zap"
 )
+
+func muxHandleFunc(mux *http.ServeMux, pattern string, handlerFunc func(http.ResponseWriter, *http.Request)) {
+	mux.Handle(
+		pattern,
+		otelhttp.NewHandler(
+			otelhttp.WithRouteTag(
+				pattern,
+				http.HandlerFunc(handlerFunc),
+			),
+			pattern,
+			otelhttp.WithMeterProvider(nil),
+			otelhttp.WithMetricAttributesFn(func(r *http.Request) []attribute.KeyValue {
+				return nil
+			}),
+		),
+	)
+}
 
 func main() {
 	var configFilename string
@@ -27,6 +48,15 @@ func main() {
 	if err != nil {
 		log.Fatal(err)
 	}
+
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+
+	telemetryShutdown, err := telemetry.Setup(ctx)
+	if err != nil {
+		log.Fatal(err)
+	}
+	defer telemetryShutdown(ctx)
 
 	// logging
 	logger := zap.Must(cfg.Logging.Build())
@@ -42,7 +72,7 @@ func main() {
 			Config: cfg,
 		})
 
-		mux.Handle("/api/v1/write", rw)
+		muxHandleFunc(mux, "/api/v1/write", rw.ServeHTTP)
 	}
 
 	//debug
@@ -54,10 +84,7 @@ func main() {
 				collectors.NewBuildInfoCollector(),
 			)
 
-			mux.Handle("/metrics", promhttp.HandlerFor(
-				prometheus.DefaultGatherer, promhttp.HandlerOpts{
-					Registry: prometheus.DefaultRegisterer,
-				}))
+			mux.Handle("/metrics", promhttp.Handler())
 		}
 
 		if cfg.Debug.Pprof {
@@ -70,15 +97,15 @@ func main() {
 
 	}
 
-	ctx, cancel := context.WithCancel(context.Background())
-	defer cancel()
-
 	// prometheus
 	if cfg.Prometheus.Enabled {
-		go func() {
-			promErr := prom.Run(ctx, cfg)
-			log.Fatal(promErr)
-		}()
+		p, err := prom.New(ctx, cfg)
+		if err != nil {
+			log.Fatal(err)
+		}
+
+		mux := httpManager.Mux(cfg.Prometheus.Listen)
+		mux.Handle("/", p)
 	}
 
 	go func() {

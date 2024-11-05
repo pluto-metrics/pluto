@@ -1,6 +1,7 @@
 package insert
 
 import (
+	"context"
 	"io"
 	"sync"
 	"unsafe"
@@ -65,7 +66,7 @@ func (p *pbTimeseries) sampleTimestamp(v int64) error {
 	return nil
 }
 
-func payloadToRowBinary(raw []byte, w io.Writer, h id.Provider) error {
+func payloadToRowBinary(ctx context.Context, raw []byte, w io.Writer, h id.Provider) error {
 	ws := schema.NewWriter(w).
 		Format(schema.RowBinaryWithNamesAndTypes).
 		Column("id", rowbinary.String).
@@ -110,6 +111,7 @@ func payloadToRowBinary(raw []byte, w io.Writer, h id.Provider) error {
 					); err != nil {
 						return err
 					}
+					metricSamplesReceived.Add(ctx, 1)
 				}
 
 				return nil

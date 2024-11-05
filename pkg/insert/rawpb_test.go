@@ -4,6 +4,7 @@ import (
 	"bufio"
 	"bytes"
 	"compress/gzip"
+	"context"
 	"io"
 	"os"
 	"testing"
@@ -36,7 +37,7 @@ func BenchmarkPayloadToRowBinaryWithSHA256(b *testing.B) {
 	b.ReportAllocs()
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
-		if err := payloadToRowBinary(raw, w, h); err != nil {
+		if err := payloadToRowBinary(context.Background(), raw, w, h); err != nil {
 			panic(err)
 		}
 	}
@@ -49,7 +50,7 @@ func BenchmarkPayloadToRowBinaryWithNoop(b *testing.B) {
 	b.ReportAllocs()
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
-		if err := payloadToRowBinary(raw, w, h); err != nil {
+		if err := payloadToRowBinary(context.Background(), raw, w, h); err != nil {
 			panic(err)
 		}
 	}
