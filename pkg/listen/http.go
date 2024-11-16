@@ -6,17 +6,20 @@ import (
 	"sync"
 	"time"
 
+	"github.com/justinas/alice"
 	"github.com/pkg/errors"
 )
 
 type HTTP struct {
 	sync.Mutex
 	mp map[string]*http.ServeMux
+	mw alice.Chain
 }
 
-func NewHTTP() *HTTP {
+func NewHTTP(mw alice.Chain) *HTTP {
 	return &HTTP{
 		mp: make(map[string]*http.ServeMux),
+		mw: mw,
 	}
 }
 
@@ -46,7 +49,7 @@ func (h *HTTP) Run(ctx context.Context) error {
 	for addr, mux := range h.mp {
 		httpSrv := &http.Server{
 			Addr:        addr,
-			Handler:     mux,
+			Handler:     h.mw.Then(mux),
 			ReadTimeout: 10 * time.Second,
 		}
 
