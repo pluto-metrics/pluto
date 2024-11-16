@@ -7,34 +7,22 @@ import (
 	"net/http"
 	"net/http/pprof"
 
+	"github.com/justinas/alice"
 	"github.com/pluto-metrics/pluto/pkg/config"
 	"github.com/pluto-metrics/pluto/pkg/insert"
 	"github.com/pluto-metrics/pluto/pkg/listen"
+	"github.com/pluto-metrics/pluto/pkg/otelcfg"
 	"github.com/pluto-metrics/pluto/pkg/prom"
-	"github.com/pluto-metrics/pluto/pkg/telemetry"
+	"github.com/pluto-metrics/pluto/pkg/trace"
+	"github.com/pluto-metrics/pluto/pkg/when"
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/collectors"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
-	"go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp"
-	"go.opentelemetry.io/otel/attribute"
 	"go.uber.org/zap"
 )
 
-func muxHandleFunc(mux *http.ServeMux, pattern string, handlerFunc func(http.ResponseWriter, *http.Request)) {
-	mux.Handle(
-		pattern,
-		otelhttp.NewHandler(
-			otelhttp.WithRouteTag(
-				pattern,
-				http.HandlerFunc(handlerFunc),
-			),
-			pattern,
-			otelhttp.WithMeterProvider(nil),
-			otelhttp.WithMetricAttributesFn(func(r *http.Request) []attribute.KeyValue {
-				return nil
-			}),
-		),
-	)
+func requestOperation(r *http.Request) string {
+	return "other"
 }
 
 func main() {
@@ -52,11 +40,12 @@ func main() {
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
-	telemetryShutdown, err := telemetry.Setup(ctx)
+	// open telemetry init
+	tm, err := otelcfg.New(ctx, cfg.Otel)
 	if err != nil {
 		log.Fatal(err)
 	}
-	defer telemetryShutdown(ctx)
+	defer tm.Shutdown(ctx)
 
 	// logging
 	logger := zap.Must(cfg.Logging.Build())
@@ -64,7 +53,7 @@ func main() {
 	defer zap.RedirectStdLog(logger)()
 	defer zap.ReplaceGlobals(logger)()
 
-	httpManager := listen.NewHTTP()
+	httpManager := listen.NewHTTP(alice.New(trace.Middleware, when.Middleware))
 	// receiver
 	if cfg.Insert.Enabled {
 		mux := httpManager.Mux(cfg.Insert.Listen)
@@ -72,7 +61,7 @@ func main() {
 			Config: cfg,
 		})
 
-		muxHandleFunc(mux, "/api/v1/write", rw.ServeHTTP)
+		mux.HandleFunc("/api/v1/write", rw.ServeHTTP)
 	}
 
 	//debug

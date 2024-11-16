@@ -6,6 +6,7 @@ import (
 	"github.com/expr-lang/expr/vm"
 	"github.com/go-playground/validator/v10"
 	"github.com/jinzhu/configor"
+	"github.com/pluto-metrics/pluto/pkg/otelcfg"
 	"go.uber.org/zap"
 )
 
@@ -80,6 +81,8 @@ type Config struct {
 	} `yaml:"debug"`
 
 	Logging zap.Config `yaml:"logging"`
+
+	Otel otelcfg.Config `yaml:"otel"`
 
 	OverrideInsert []struct {
 		ConfigInsert `yaml:",inline"`
