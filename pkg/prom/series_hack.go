@@ -45,7 +45,7 @@ func keyHistogram(lb labels.Labels) (string, string) {
 	return v.String(), le
 }
 
-func hackSingleHistogram(h []*series, hints *storage.SelectHints) {
+func hackSingleHistogram(h []*series, _ *storage.SelectHints) {
 	// slow variant for test
 	// @TODO
 	tsMap := make(map[int64]int)

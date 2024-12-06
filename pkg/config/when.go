@@ -1,7 +1,10 @@
 package config
 
 import (
+	"context"
+
 	"github.com/expr-lang/expr"
+	"github.com/pluto-metrics/pluto/pkg/trace"
 	"github.com/spf13/cast"
 	"go.uber.org/zap"
 )
@@ -19,7 +22,7 @@ func (w *ConfigWhen) compileWhen(env any) error {
 	return err
 }
 
-func (w *ConfigWhen) When(env any) (bool, error) {
+func (w *ConfigWhen) When(ctx context.Context, env any) (bool, error) {
 	if w == nil {
 		return false, nil
 	}
@@ -28,7 +31,7 @@ func (w *ConfigWhen) When(env any) (bool, error) {
 	}
 	output, err := expr.Run(w.WhenExpr, env)
 	if err != nil {
-		zap.L().Error("can't evaluate expression", zap.String("expr", w.WhenStr), zap.Error(err))
+		trace.Log(ctx).Error("can't evaluate expression", zap.String("expr", w.WhenStr), trace.Error(err))
 		return false, err
 	}
 	return cast.ToBool(output), nil

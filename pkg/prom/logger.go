@@ -1,6 +1,9 @@
 package prom
 
 import (
+	"context"
+
+	"github.com/pluto-metrics/pluto/pkg/trace"
 	"go.uber.org/zap"
 )
 
@@ -9,26 +12,26 @@ type errorLevel interface {
 }
 
 type logger struct {
-	z *zap.Logger
 }
 
 func (l *logger) Log(keyvals ...interface{}) error {
-	lg := l.z
+	ctx := context.Background()
 	var msg string
 	var level errorLevel
+	fields := make([]zap.Field, 0)
 
 	for i := 1; i < len(keyvals); i += 2 {
 		keyObj := keyvals[i-1]
 		keyStr, ok := keyObj.(string)
 		if !ok {
-			l.z.Error("can't handle log, wrong key", zap.Any("keyvals", keyvals))
+			trace.Log(ctx).Error("can't handle log, wrong key", zap.Any("keyvals", keyvals))
 			return nil
 		}
 
 		if keyStr == "level" {
 			level, ok = keyvals[i].(errorLevel)
 			if !ok {
-				l.z.Error("can't handle log, wrong level", zap.Any("keyvals", keyvals))
+				trace.Log(ctx).Error("can't handle log, wrong level", zap.Any("keyvals", keyvals))
 				return nil
 			}
 			continue
@@ -37,26 +40,26 @@ func (l *logger) Log(keyvals ...interface{}) error {
 		if keyStr == "msg" {
 			msg, ok = keyvals[i].(string)
 			if !ok {
-				l.z.Error("can't handle log, wrong msg", zap.Any("keyvals", keyvals))
+				trace.Log(ctx).Error("can't handle log, wrong msg", zap.Any("keyvals", keyvals))
 				return nil
 			}
 			continue
 		}
 
-		lg = lg.With(zap.Any(keyStr, keyvals[i]))
+		fields = append(fields, zap.Any(keyStr, keyvals[i]))
 	}
 
 	switch level.String() {
 	case "debug":
-		lg.Debug(msg)
+		trace.Log(ctx).Debug(msg, fields...)
 	case "info":
-		lg.Info(msg)
+		trace.Log(ctx).Info(msg, fields...)
 	case "warn":
-		lg.Warn(msg)
+		trace.Log(ctx).Warn(msg, fields...)
 	case "error":
-		lg.Error(msg)
+		trace.Log(ctx).Error(msg, fields...)
 	default:
-		l.z.Error("can't handle log, unknown level", zap.Any("keyvals", keyvals))
+		trace.Log(ctx).Error("can't handle log, unknown level", fields...)
 		return nil
 	}
 	return nil

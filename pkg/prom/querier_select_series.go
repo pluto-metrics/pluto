@@ -7,22 +7,25 @@ import (
 
 	"github.com/jinzhu/copier"
 	"github.com/pluto-metrics/pluto/pkg/config"
-	"github.com/pluto-metrics/pluto/pkg/scope"
 	"github.com/pluto-metrics/pluto/pkg/sql"
+	"github.com/pluto-metrics/pluto/pkg/trace"
 	"github.com/pluto-metrics/rowbinary"
 	"github.com/pluto-metrics/rowbinary/schema"
 	"github.com/prometheus/prometheus/model/labels"
 	"github.com/prometheus/prometheus/storage"
-	"go.uber.org/zap"
+	"go.opentelemetry.io/otel/attribute"
 )
 
 func (q *Querier) selectSeries(ctx context.Context, selectHints *storage.SelectHints, matchers []*labels.Matcher) (map[string]labels.Labels, error) {
+	ctx, span := trace.Start(ctx, "Querier.selectSeries")
+	defer span.End()
+
 	envSeries := config.EnvSeries{}
 	if err := copier.Copy(&envSeries, selectHints); err != nil {
 		return nil, err
 	}
 
-	seriesCfg, err := q.config.GetSeries(&envSeries)
+	seriesCfg, err := q.config.GetSeries(ctx, &envSeries)
 	if err != nil {
 		return nil, err
 	}
@@ -31,7 +34,7 @@ func (q *Querier) selectSeries(ctx context.Context, selectHints *storage.SelectH
 	q.whereSeriesTimeRange(ctx, where, selectHints.Start, selectHints.End)
 	q.whereMatchLabels(ctx, seriesCfg, where, matchers)
 
-	qq, err := sql.Template(`
+	qq, err := sql.Template(ctx, `
 		SELECT id, any(labels)
 		FROM {{.table}}
 		{{.where.SQL}}
@@ -45,9 +48,7 @@ func (q *Querier) selectSeries(ctx context.Context, selectHints *storage.SelectH
 		return nil, err
 	}
 
-	ctx = scope.QueryBegin(ctx)
-	scope.QueryWith(ctx, zap.String("query", qq))
-	defer scope.QueryFinish(ctx)
+	span.SetAttributes(attribute.String("query", qq))
 
 	chRequest, err := q.request(ctx, seriesCfg.ClickHouse, qq)
 	if err != nil {
@@ -57,7 +58,7 @@ func (q *Querier) selectSeries(ctx context.Context, selectHints *storage.SelectH
 
 	chResponse, err := chRequest.Finish()
 	if err != nil {
-		zap.L().Error("can't finish request to clickhouse", zap.Error(err))
+		trace.Log(ctx).Error("can't finish request to clickhouse", trace.Error(err))
 		return nil, err
 	}
 	defer chResponse.Close()

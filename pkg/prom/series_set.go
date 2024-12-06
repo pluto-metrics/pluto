@@ -25,9 +25,8 @@ type seriesIterator struct {
 
 // Series represents a single time series.
 type series struct {
-	labels     labels.Labels
-	samples    []sample
-	isQuantile bool // presumably the series is used in calculating the quantile
+	labels  labels.Labels
+	samples []sample
 }
 
 // SeriesSet contains a set of series.
@@ -133,10 +132,8 @@ func (sit *seriesIterator) AtT() int64 {
 func (sit *seriesIterator) Next() chunkenc.ValueType {
 	if sit.current < len(sit.series.samples)-1 {
 		sit.current++
-		// sit.logger().Debug("seriesIterator.Next", zap.Bool("ret", true))
 		return chunkenc.ValFloat
 	}
-	// sit.logger().Debug("seriesIterator.Next", zap.Bool("ret", false))
 	return chunkenc.ValNone
 }
 
@@ -148,22 +145,18 @@ func (ss *seriesSet) Err() error { return ss.err }
 
 func (ss *seriesSet) At() storage.Series {
 	if ss == nil || ss.current < 0 || ss.current >= len(ss.data) {
-		// zap.L().Debug("seriesSet.At", zap.String("metricName", "nil"))
 		return nil
 	}
 	s := &ss.data[ss.current]
-	// zap.L().Debug("seriesSet.At", zap.String("metricName", s.name()))
 	return s
 }
 
 func (ss *seriesSet) Next() bool {
 	if ss == nil || ss.current+1 >= len(ss.data) {
-		// zap.L().Debug("seriesSet.Next", zap.Bool("ret", false))
 		return false
 	}
 
 	ss.current++
-	// zap.L().Debug("seriesSet.Next", zap.Bool("ret", true))
 	return true
 }
 

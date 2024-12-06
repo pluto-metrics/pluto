@@ -28,7 +28,6 @@ import (
 	"github.com/prometheus/prometheus/rules"
 	"github.com/prometheus/prometheus/scrape"
 	api_v1 "github.com/prometheus/prometheus/web/api/v1"
-	"go.uber.org/zap"
 )
 
 type Prom struct {
@@ -46,9 +45,7 @@ func New(ctx context.Context, config *config.Config) (*Prom, error) {
 		pageTitle: config.Prometheus.PageTitle,
 	}
 
-	promLogger := &logger{
-		z: zap.L().With(zap.String("module", "prometheus")),
-	}
+	promLogger := &logger{}
 
 	storage := newStorage(config)
 

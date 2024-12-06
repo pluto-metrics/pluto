@@ -80,9 +80,8 @@ type Config struct {
 		Metrics bool   `yaml:"metrics" default:"true"`
 	} `yaml:"debug"`
 
-	Logging zap.Config `yaml:"logging"`
-
-	Otel otelcfg.Config `yaml:"otel"`
+	Logging zap.Config     `yaml:"logging"`
+	Otel    otelcfg.Config `yaml:"otel"`
 
 	OverrideInsert []struct {
 		ConfigInsert `yaml:",inline"`
@@ -110,6 +109,8 @@ func LoadFromFile(filename string, development bool) (*Config, error) {
 	} else {
 		cfg.Logging = zap.NewProductionConfig()
 	}
+	cfg.Logging.DisableStacktrace = true
+
 	if err = configor.Load(&cfg, filename); err != nil {
 		return nil, err
 	}
@@ -150,6 +151,10 @@ func LoadFromFile(filename string, development bool) (*Config, error) {
 		if err = cfg.OverrideSamples[i].compileWhen(EnvSamples{}); err != nil {
 			return nil, err
 		}
+	}
+
+	if _, err = cfg.Logging.Build(); err != nil {
+		return nil, err
 	}
 
 	return &cfg, nil

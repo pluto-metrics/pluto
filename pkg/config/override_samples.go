@@ -1,12 +1,14 @@
 package config
 
+import "context"
+
 type EnvSamples EnvSeries
 
 func NewEnvSamples() *EnvSamples {
 	return &EnvSamples{}
 }
 
-func (cfg *Config) GetSamples(values *EnvSamples) (ConfigSamples, error) {
+func (cfg *Config) GetSamples(ctx context.Context, values *EnvSamples) (ConfigSamples, error) {
 	ret := ConfigSamples{
 		Table:                  cfg.Select.TableSamples,
 		ClickHouse:             &cfg.ClickHouse,
@@ -14,7 +16,7 @@ func (cfg *Config) GetSamples(values *EnvSamples) (ConfigSamples, error) {
 	}
 
 	for _, o := range cfg.OverrideSamples {
-		result, err := o.When(values)
+		result, err := o.When(ctx, values)
 		if err != nil {
 			return ret, err
 		}

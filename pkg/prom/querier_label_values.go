@@ -5,20 +5,23 @@ import (
 	"context"
 
 	"github.com/pluto-metrics/pluto/pkg/config"
-	"github.com/pluto-metrics/pluto/pkg/scope"
 	"github.com/pluto-metrics/pluto/pkg/sql"
+	"github.com/pluto-metrics/pluto/pkg/trace"
 	"github.com/pluto-metrics/rowbinary"
 	"github.com/pluto-metrics/rowbinary/schema"
 	"github.com/prometheus/prometheus/storage"
 	"github.com/prometheus/prometheus/util/annotations"
-	"go.uber.org/zap"
+	"go.opentelemetry.io/otel/attribute"
 
 	"github.com/prometheus/prometheus/model/labels"
 )
 
 // LabelValues returns all potential values for a label name.
 func (q *Querier) LabelValues(ctx context.Context, label string, hints *storage.LabelHints, matchers ...*labels.Matcher) ([]string, annotations.Annotations, error) {
-	seriesCfg, err := q.config.GetSeries(&config.EnvSeries{Limit: hints.Limit})
+	ctx, span := trace.Start(ctx, "Querier.LabelValues")
+	defer span.End()
+
+	seriesCfg, err := q.config.GetSeries(ctx, &config.EnvSeries{Limit: hints.Limit})
 	if err != nil {
 		return nil, nil, err
 	}
@@ -31,7 +34,7 @@ func (q *Querier) LabelValues(ctx context.Context, label string, hints *storage.
 	q.whereSeriesTimeRange(ctx, where, start, end)
 	q.whereMatchLabels(ctx, seriesCfg, where, matchers)
 
-	qq, err := sql.Template(`
+	qq, err := sql.Template(ctx, `
 		SELECT
 			{{if (eq .label "__name__")}}
 				name
@@ -52,9 +55,8 @@ func (q *Querier) LabelValues(ctx context.Context, label string, hints *storage.
 	if err != nil {
 		return nil, nil, err
 	}
-	ctx = scope.QueryBegin(ctx)
-	scope.QueryWith(ctx, zap.String("query", qq))
-	defer scope.QueryFinish(ctx)
+
+	span.SetAttributes(attribute.String("query", qq))
 
 	chRequest, err := q.request(ctx, seriesCfg.ClickHouse, qq)
 	if err != nil {
@@ -64,7 +66,7 @@ func (q *Querier) LabelValues(ctx context.Context, label string, hints *storage.
 
 	chResponse, err := chRequest.Finish()
 	if err != nil {
-		zap.L().Error("can't finish request to clickhouse", zap.Error(err))
+		trace.Log(ctx).Error("can't finish request to clickhouse", trace.Error(err))
 		return nil, nil, err
 	}
 	defer chResponse.Close()

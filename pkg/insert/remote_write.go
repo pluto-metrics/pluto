@@ -9,10 +9,8 @@ import (
 	"github.com/pluto-metrics/pluto/pkg/config"
 	"github.com/pluto-metrics/pluto/pkg/insert/id"
 	"github.com/pluto-metrics/pluto/pkg/query"
-	"github.com/pluto-metrics/pluto/pkg/scope"
-	"go.uber.org/zap"
-
-	_ "github.com/gogo/protobuf/gogoproto"
+	"github.com/pluto-metrics/pluto/pkg/trace"
+	"go.opentelemetry.io/otel/attribute"
 )
 
 type Opts struct {
@@ -28,6 +26,9 @@ func NewPrometheusRemoteWrite(opts Opts) *PrometheusRemoteWrite {
 }
 
 func (rcv *PrometheusRemoteWrite) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+	ctx, span := trace.Start(r.Context(), "PrometheusRemoteWrite.ServeHTTP")
+	defer span.End()
+
 	metricRemoteWriteRequests.Add(r.Context(), 1)
 
 	if rcv.opts.Config.Insert.CloseConnections {
@@ -36,36 +37,35 @@ func (rcv *PrometheusRemoteWrite) ServeHTTP(w http.ResponseWriter, r *http.Reque
 
 	reqCompressed, err := io.ReadAll(r.Body)
 	if err != nil {
-		zap.L().Error("can't read prometheus request", zap.Error(err))
+		trace.Log(ctx).Error("can't read prometheus request", trace.Error(err))
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
 
 	reqRaw, err := snappy.Decode(nil, reqCompressed)
 	if err != nil {
-		zap.L().Error("can't decode prometheus request", zap.Error(err))
+		trace.Log(ctx).Error("can't decode prometheus request", trace.Error(err))
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
 
 	insertCfg, err := rcv.opts.Config.GetInsert(
+		ctx,
 		config.NewEnvInsert().WithRequest(r),
 	)
 	if err != nil {
-		zap.L().Error("can't get insert config", zap.Error(err))
+		trace.Log(ctx).Error("can't get insert config", trace.Error(err))
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 
 	qq := fmt.Sprintf("INSERT INTO %s FORMAT RowBinaryWithNamesAndTypes\n", insertCfg.Table)
 
-	ctx := scope.QueryBegin(r.Context())
-	scope.QueryWith(ctx, zap.String("query", qq))
-	defer scope.QueryFinish(ctx)
+	span.SetAttributes(attribute.String("query", qq))
 
 	chRequest, err := query.NewRequest(ctx, *insertCfg.ClickHouse, query.Opts{})
 	if err != nil {
-		zap.L().Error("can't create request to clickhouse", zap.Error(err))
+		trace.Log(ctx).Error("can't create request to clickhouse", trace.Error(err))
 		http.Error(w, err.Error(), http.StatusBadGateway)
 		return
 	}
@@ -74,27 +74,27 @@ func (rcv *PrometheusRemoteWrite) ServeHTTP(w http.ResponseWriter, r *http.Reque
 
 	_, err = fmt.Fprint(chRequest, qq)
 	if err != nil {
-		zap.L().Error("can't write query to clickhouse", zap.Error(err))
+		trace.Log(ctx).Error("can't write query to clickhouse", trace.Error(err))
 		http.Error(w, err.Error(), http.StatusBadGateway)
 		return
 	}
 
 	if err := payloadToRowBinary(ctx, reqRaw, chRequest, id.NewNameWithSha256()); err != nil {
-		zap.L().Error("can't write request to clickhouse", zap.Error(err))
+		trace.Log(ctx).Error("can't write request to clickhouse", trace.Error(err))
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 
 	chResponse, err := chRequest.Finish()
 	if err != nil {
-		zap.L().Error("can't finish request to clickhouse", zap.Error(err))
+		trace.Log(ctx).Error("can't finish request to clickhouse", trace.Error(err))
 		http.Error(w, err.Error(), http.StatusBadGateway)
 		return
 	}
 
 	err = chResponse.Close()
 	if err != nil {
-		zap.L().Error("can't close response from clickhouse", zap.Error(err))
+		trace.Log(ctx).Error("can't close response from clickhouse", trace.Error(err))
 		http.Error(w, err.Error(), http.StatusBadGateway)
 		return
 	}

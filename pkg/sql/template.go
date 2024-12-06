@@ -1,13 +1,15 @@
 package sql
 
 import (
+	"context"
+
 	"strings"
 	"text/template"
 
-	"go.uber.org/zap"
+	"github.com/pluto-metrics/pluto/pkg/trace"
 )
 
-func Template(t string, args interface{}) (string, error) {
+func Template(ctx context.Context, t string, args interface{}) (string, error) {
 	// @TODO: cache template
 	funcMap := template.FuncMap{
 		"column": Column,
@@ -15,7 +17,7 @@ func Template(t string, args interface{}) (string, error) {
 	}
 	tmpl, err := template.New(t).Funcs(funcMap).Parse(t)
 	if err != nil {
-		zap.L().Error("can't parse template", zap.Error(err))
+		trace.Log(ctx).Error("can't parse template", trace.Error(err))
 		return "", err
 	}
 
@@ -23,7 +25,7 @@ func Template(t string, args interface{}) (string, error) {
 
 	err = tmpl.Execute(out, args)
 	if err != nil {
-		zap.L().Error("can't execute template", zap.Error(err))
+		trace.Log(ctx).Error("can't execute template", trace.Error(err))
 		return "", err
 	}
 
