@@ -143,7 +143,10 @@ func (tm *manager) newTraceProvider(ctx context.Context) error {
 	}
 
 	if tm.cfg.Trace.OtlpHttp.Endpoint != "" {
-		exporter, err := otlptracehttp.New(ctx, otlptracehttp.WithEndpointURL(tm.cfg.Trace.OtlpHttp.Endpoint))
+		exporter, err := otlptracehttp.New(ctx,
+			otlptracehttp.WithEndpointURL(tm.cfg.Trace.OtlpHttp.Endpoint),
+			otlptracehttp.WithHeaders(tm.cfg.Trace.OtlpHttp.Headers),
+		)
 		if err != nil {
 			return err
 		}
@@ -200,7 +203,10 @@ func (tm *manager) newLoggerProvider(ctx context.Context) error {
 	}
 
 	if tm.cfg.Log.OtlpHttp.Endpoint != "" {
-		exporter, err := otlploghttp.New(ctx, otlploghttp.WithEndpointURL(tm.cfg.Log.OtlpHttp.Endpoint))
+		exporter, err := otlploghttp.New(ctx,
+			otlploghttp.WithEndpointURL(tm.cfg.Log.OtlpHttp.Endpoint),
+			otlploghttp.WithHeaders(tm.cfg.Log.OtlpHttp.Headers),
+		)
 		if err != nil {
 			return err
 		}
