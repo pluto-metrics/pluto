@@ -1,6 +1,7 @@
 package config
 
 import (
+	"context"
 	"net/http"
 )
 
@@ -16,7 +17,7 @@ func NewEnvInsert() *EnvInsert {
 	}
 }
 
-func (cfg *Config) GetInsert(values *EnvInsert) (ConfigInsert, error) {
+func (cfg *Config) GetInsert(ctx context.Context, values *EnvInsert) (ConfigInsert, error) {
 	ret := ConfigInsert{
 		Table:      cfg.Insert.Table,
 		IDFunc:     cfg.Insert.IDFunc,
@@ -24,7 +25,7 @@ func (cfg *Config) GetInsert(values *EnvInsert) (ConfigInsert, error) {
 	}
 
 	for _, o := range cfg.OverrideInsert {
-		result, err := o.When(values)
+		result, err := o.When(ctx, values)
 		if err != nil {
 			return ret, err
 		}

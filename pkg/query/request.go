@@ -12,8 +12,8 @@ import (
 
 	"github.com/pkg/errors"
 	"github.com/pluto-metrics/pluto/pkg/config"
-	"github.com/pluto-metrics/pluto/pkg/scope"
-	"go.uber.org/zap"
+	"github.com/pluto-metrics/pluto/pkg/trace"
+	"go.opentelemetry.io/otel/attribute"
 )
 
 const (
@@ -35,6 +35,7 @@ type Opts struct {
 type Request struct {
 	sync.Mutex
 	ctx       context.Context
+	span      trace.Span
 	ctxCancel context.CancelFunc
 	reader    *io.PipeReader
 	writer    *io.PipeWriter
@@ -52,6 +53,7 @@ type Request struct {
 // Response ...
 type Response struct {
 	ctx      context.Context
+	span     trace.Span
 	httpBody io.ReadCloser
 
 	vars struct {
@@ -61,10 +63,11 @@ type Response struct {
 
 // New начинает отправлять запрос в КХ
 func NewRequest(ctx context.Context, cfg config.ClickHouse, opts Opts) (*Request, error) {
-	scope.QuerySetClickhouseConfig(ctx, &cfg)
+	ctx, span := trace.Start(ctx, "query.Request")
 
 	u, err := url.Parse(cfg.DSN)
 	if err != nil {
+		trace.Log(ctx).Error("can't parse clickhouse DSN")
 		return nil, err
 	}
 
@@ -85,6 +88,7 @@ func NewRequest(ctx context.Context, cfg config.ClickHouse, opts Opts) (*Request
 		writerBuf: writerBuf,
 		ctx:       ctx,
 		ctxCancel: ctxCancel,
+		span:      span,
 		finished:  make(chan interface{}),
 	}
 
@@ -156,8 +160,6 @@ func NewRequest(ctx context.Context, cfg config.ClickHouse, opts Opts) (*Request
 			return
 		}
 
-		scope.QuerySetClickhouseSummary(ctx, httpResp.Header.Get("X-Clickhouse-Summary"))
-
 		if httpResp.StatusCode != http.StatusOK {
 			body, bodyErr := io.ReadAll(httpResp.Body)
 
@@ -173,7 +175,9 @@ func NewRequest(ctx context.Context, cfg config.ClickHouse, opts Opts) (*Request
 		}
 
 		req.Lock()
-		req.resp = &Response{ctx: ctx, httpBody: httpResp.Body}
+		respCtx, respSpan := trace.Start(ctx, "query.Response")
+		respSpan.SetAttributes(attribute.String("X-Clickhouse-Summary", httpResp.Header.Get("X-Clickhouse-Summary")))
+		req.resp = &Response{ctx: respCtx, span: respSpan, httpBody: httpResp.Body}
 		req.Unlock()
 	}()
 
@@ -203,6 +207,8 @@ func (req *Request) Close() error {
 	resp := req.resp
 	req.Unlock()
 
+	req.span.End()
+
 	if err != nil {
 		return err
 	}
@@ -216,7 +222,7 @@ func (req *Request) Close() error {
 
 // Finish завершает запрос и начинает вычитывать ответ
 func (req *Request) Finish() (*Response, error) {
-	scope.QueryWith(req.ctx, zap.Int("req_body_bytes", req.vars.reqBodyBytes))
+	req.span.SetAttributes(attribute.Int("req_body_bytes", req.vars.reqBodyBytes))
 
 	if err := req.writerBuf.Flush(); err != nil {
 		// возможно есть ошибка от сервера
@@ -264,6 +270,10 @@ func (resp *Response) Read(p []byte) (int, error) {
 // Close вычитывает остатки из body
 func (resp *Response) Close() error {
 	_, err := io.Copy(io.Discard, resp)
-	scope.QueryWith(resp.ctx, zap.Int("resp_body_bytes", resp.vars.respBodyBytes))
+	if resp.span != nil {
+		resp.span.End()
+		resp.span = nil
+	}
+	resp.span.SetAttributes(attribute.Int("resp_body_bytes", resp.vars.respBodyBytes))
 	return err
 }

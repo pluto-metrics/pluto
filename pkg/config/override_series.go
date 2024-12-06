@@ -1,5 +1,7 @@
 package config
 
+import "context"
+
 type EnvSeries struct {
 	Start           int64    `expr:"start"`
 	End             int64    `expr:"end"`
@@ -18,7 +20,7 @@ func NewEnvSeries() *EnvSeries {
 	return &EnvSeries{}
 }
 
-func (cfg *Config) GetSeries(values *EnvSeries) (ConfigSeries, error) {
+func (cfg *Config) GetSeries(ctx context.Context, values *EnvSeries) (ConfigSeries, error) {
 	ret := ConfigSeries{
 		Table:                    cfg.Select.TableSeries,
 		AutocompleteLookback:     cfg.Select.AutocompleteLookback,
@@ -28,7 +30,7 @@ func (cfg *Config) GetSeries(values *EnvSeries) (ConfigSeries, error) {
 	}
 
 	for _, o := range cfg.OverrideSeries {
-		result, err := o.When(values)
+		result, err := o.When(ctx, values)
 		if err != nil {
 			return ret, err
 		}
