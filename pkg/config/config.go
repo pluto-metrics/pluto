@@ -69,6 +69,7 @@ type Config struct {
 		Listen                     string        `yaml:"listen" default:"0.0.0.0:9096" comment:"listen addr for prometheus ui and api"`
 		ExternalURL                string        `yaml:"external_url" default:"http://127.0.0.1:9096" comment:"allows to set URL for redirect manually"`
 		PageTitle                  string        `yaml:"page_title" default:"Pluto"`
+		RoutePrefix                string        `yaml:"route_prefix" default:"/" comment:"URL prefix for all routes, e.g. /prom"`
 		LookbackDelta              time.Duration `yaml:"lookback_delta" default:"5m"`
 		RemoteReadConcurrencyLimit int           `yaml:"remote_read_concurrency_limit" default:"10" comment:"concurrently handled remote read requests"`
 	} `yaml:"prometheus"`
@@ -79,8 +80,6 @@ type Config struct {
 		Pprof   bool   `yaml:"pprof" default:"true"`
 		Metrics bool   `yaml:"metrics" default:"true"`
 	} `yaml:"debug"`
-
-	Logging zap.Config `yaml:"logging"`
 
 	OverrideInsert []struct {
 		ConfigInsert `yaml:",inline"`

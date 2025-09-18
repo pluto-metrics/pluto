@@ -4,7 +4,9 @@ import (
 	"context"
 	"flag"
 	"log"
+	"log/slog"
 	"net/http/pprof"
+	"os"
 
 	"github.com/pluto-metrics/pluto/pkg/config"
 	"github.com/pluto-metrics/pluto/pkg/insert"
@@ -17,11 +19,14 @@ import (
 )
 
 func main() {
+
 	var configFilename string
 	var development bool
 	flag.StringVar(&configFilename, "config", "/etc/pluto/config.yaml", "Config filename")
 	flag.BoolVar(&development, "dev", false, "Use development config by default")
 	flag.Parse()
+
+	slog.SetDefault(slog.New(slog.NewJSONHandler(os.Stdout, nil)))
 
 	cfg, err := config.LoadFromFile(configFilename, development)
 	if err != nil {
@@ -31,8 +36,8 @@ func main() {
 	// logging
 	logger := zap.Must(cfg.Logging.Build())
 	defer logger.Sync()
-	defer zap.RedirectStdLog(logger)()
-	defer zap.ReplaceGlobals(logger)()
+	// defer zap.RedirectStdLog(logger)()
+	// defer zap.ReplaceGlobals(logger)()
 
 	httpManager := listen.NewHTTP()
 	// receiver
@@ -75,10 +80,14 @@ func main() {
 
 	// prometheus
 	if cfg.Prometheus.Enabled {
-		go func() {
-			promErr := prom.Run(ctx, cfg)
-			log.Fatal(promErr)
-		}()
+		mux := httpManager.Mux(cfg.Prometheus.Listen)
+
+		p, err := prom.New(ctx, cfg)
+		if err != nil {
+			log.Fatal(err)
+		}
+
+		p.Register(mux)
 	}
 
 	go func() {

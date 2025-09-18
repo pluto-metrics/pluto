@@ -15,10 +15,8 @@ func isHistogram(data []series) bool {
 
 	for i := 0; i < len(data); i++ {
 		isBucket := false
-		for _, l := range data[i].labels {
-			if l.Name == "le" {
-				isBucket = true
-			}
+		if data[i].labels.Get("le") != "" {
+			isBucket = true
 		}
 		if !isBucket {
 			return false
@@ -32,15 +30,15 @@ func keyHistogram(lb labels.Labels) (string, string) {
 	v := new(strings.Builder)
 	le := ""
 
-	for _, l := range lb {
+	lb.Range(func(l labels.Label) {
 		if l.Name == "le" {
 			le = l.Value
-			continue
+			return
 		}
 		v.WriteString(l.Name)
 		v.WriteByte('=')
 		v.WriteString(l.Value)
-	}
+	})
 
 	return v.String(), le
 }

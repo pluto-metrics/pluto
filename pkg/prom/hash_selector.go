@@ -14,7 +14,7 @@ type hashSelectorAlgo int
 
 const (
 	hashSelectorAlgoNone     hashSelectorAlgo = 0
-	hashSelectorAlgoXxHash32                  = 1
+	hashSelectorAlgoXxHash32 hashSelectorAlgo = 1
 	// hashSelectorUseXxHash64                 = 2
 )
 
