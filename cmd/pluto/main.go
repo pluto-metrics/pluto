@@ -15,7 +15,6 @@ import (
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/collectors"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
-	"go.uber.org/zap"
 )
 
 func main() {
@@ -26,18 +25,16 @@ func main() {
 	flag.BoolVar(&development, "dev", false, "Use development config by default")
 	flag.Parse()
 
-	slog.SetDefault(slog.New(slog.NewJSONHandler(os.Stdout, nil)))
+	var logLevel = new(slog.LevelVar) // Info by default
+	slog.SetDefault(slog.New(slog.NewJSONHandler(os.Stdout, &slog.HandlerOptions{Level: logLevel})))
 
-	cfg, err := config.LoadFromFile(configFilename, development)
+	cfg, err := config.LoadFromFile(configFilename)
 	if err != nil {
 		log.Fatal(err)
 	}
 
-	// logging
-	logger := zap.Must(cfg.Logging.Build())
-	defer logger.Sync()
-	// defer zap.RedirectStdLog(logger)()
-	// defer zap.ReplaceGlobals(logger)()
+	// set log level from config
+	logLevel.Set(cfg.Logging.Level)
 
 	httpManager := listen.NewHTTP()
 	// receiver

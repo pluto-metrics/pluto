@@ -1,12 +1,12 @@
 package config
 
 import (
+	"log/slog"
 	"time"
 
 	"github.com/expr-lang/expr/vm"
 	"github.com/go-playground/validator/v10"
 	"github.com/jinzhu/configor"
-	"go.uber.org/zap"
 )
 
 type ConfigWhen struct {
@@ -15,11 +15,8 @@ type ConfigWhen struct {
 }
 
 type ClickHouse struct {
-	DSN      string            `yaml:"dsn" validate:"uri" default:"http://127.0.0.1:8123/?async_insert=1&wait_for_async_insert=1"`
-	Params   map[string]string `yaml:"params"`
-	QueryLog struct {
-		ConfigWhen `yaml:",inline"`
-	} `yaml:"query_log"`
+	DSN    string            `yaml:"dsn" validate:"uri" default:"http://127.0.0.1:8123/?async_insert=1&wait_for_async_insert=1"`
+	Params map[string]string `yaml:"params"`
 }
 
 type ConfigInsert struct {
@@ -74,6 +71,10 @@ type Config struct {
 		RemoteReadConcurrencyLimit int           `yaml:"remote_read_concurrency_limit" default:"10" comment:"concurrently handled remote read requests"`
 	} `yaml:"prometheus"`
 
+	Logging struct {
+		Level slog.Level `yaml:"level" default:"info"`
+	} `yaml:"logging"`
+
 	Debug struct {
 		Enabled bool   `yaml:"enabled" default:"true"`
 		Listen  string `yaml:"listen" default:"0.0.0.0:9095"`
@@ -97,25 +98,16 @@ type Config struct {
 	} `yaml:"override_samples"`
 }
 
-func LoadFromFile(filename string, development bool) (*Config, error) {
+func LoadFromFile(filename string) (*Config, error) {
 	cfg := Config{}
 
 	var err error
 
-	if development {
-		cfg.Logging = zap.NewDevelopmentConfig()
-	} else {
-		cfg.Logging = zap.NewProductionConfig()
-	}
 	if err = configor.Load(&cfg, filename); err != nil {
 		return nil, err
 	}
 	if err = validator.New(validator.WithRequiredStructEnabled()).Struct(cfg); err != nil {
 		return nil, err
-	}
-
-	for i := 0; i < len(cfg.OverrideInsert); i++ {
-
 	}
 
 	if err = cfg.ClickHouse.compile(); err != nil {

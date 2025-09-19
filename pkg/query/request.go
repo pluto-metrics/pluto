@@ -12,8 +12,6 @@ import (
 
 	"github.com/pkg/errors"
 	"github.com/pluto-metrics/pluto/pkg/config"
-	"github.com/pluto-metrics/pluto/pkg/scope"
-	"go.uber.org/zap"
 )
 
 const (
@@ -61,8 +59,6 @@ type Response struct {
 
 // New начинает отправлять запрос в КХ
 func NewRequest(ctx context.Context, cfg config.ClickHouse, opts Opts) (*Request, error) {
-	scope.QuerySetClickhouseConfig(ctx, &cfg)
-
 	u, err := url.Parse(cfg.DSN)
 	if err != nil {
 		return nil, err
@@ -156,8 +152,6 @@ func NewRequest(ctx context.Context, cfg config.ClickHouse, opts Opts) (*Request
 			return
 		}
 
-		scope.QuerySetClickhouseSummary(ctx, httpResp.Header.Get("X-Clickhouse-Summary"))
-
 		if httpResp.StatusCode != http.StatusOK {
 			body, bodyErr := io.ReadAll(httpResp.Body)
 
@@ -216,7 +210,6 @@ func (req *Request) Close() error {
 
 // Finish завершает запрос и начинает вычитывать ответ
 func (req *Request) Finish() (*Response, error) {
-	scope.QueryWith(req.ctx, zap.Int("req_body_bytes", req.vars.reqBodyBytes))
 
 	if err := req.writerBuf.Flush(); err != nil {
 		// возможно есть ошибка от сервера
@@ -264,6 +257,5 @@ func (resp *Response) Read(p []byte) (int, error) {
 // Close вычитывает остатки из body
 func (resp *Response) Close() error {
 	_, err := io.Copy(io.Discard, resp)
-	scope.QueryWith(resp.ctx, zap.Int("resp_body_bytes", resp.vars.respBodyBytes))
 	return err
 }

@@ -9,7 +9,6 @@ import (
 	"github.com/pluto-metrics/pluto/pkg/config"
 	"github.com/pluto-metrics/pluto/pkg/insert/id"
 	"github.com/pluto-metrics/pluto/pkg/query"
-	"github.com/pluto-metrics/pluto/pkg/scope"
 	"go.uber.org/zap"
 
 	_ "github.com/gogo/protobuf/gogoproto"
@@ -57,11 +56,7 @@ func (rcv *PrometheusRemoteWrite) ServeHTTP(w http.ResponseWriter, r *http.Reque
 
 	qq := fmt.Sprintf("INSERT INTO %s FORMAT RowBinaryWithNamesAndTypes\n", insertCfg.Table)
 
-	ctx := scope.QueryBegin(r.Context())
-	scope.QueryWith(ctx, zap.String("query", qq))
-	defer scope.QueryFinish(ctx)
-
-	chRequest, err := query.NewRequest(ctx, *insertCfg.ClickHouse, query.Opts{})
+	chRequest, err := query.NewRequest(r.Context(), *insertCfg.ClickHouse, query.Opts{})
 	if err != nil {
 		zap.L().Error("can't create request to clickhouse", zap.Error(err))
 		http.Error(w, err.Error(), http.StatusBadGateway)

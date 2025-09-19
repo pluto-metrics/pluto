@@ -14,7 +14,6 @@ import (
 	"github.com/jinzhu/copier"
 	"github.com/pluto-metrics/pluto/pkg/config"
 	"github.com/pluto-metrics/pluto/pkg/query"
-	"github.com/pluto-metrics/pluto/pkg/scope"
 	"github.com/pluto-metrics/pluto/pkg/sql"
 	"github.com/pluto-metrics/rowbinary"
 	"github.com/pluto-metrics/rowbinary/schema"
@@ -88,14 +87,6 @@ func (q *Querier) Select(ctx context.Context, sortSeries bool, selectHints *stor
 		return errorSeriesSet(err)
 	}
 
-	ctx = scope.QueryBegin(ctx)
-	scope.QueryWith(ctx, zap.String("query", qq))
-	defer scope.QueryFinish(ctx)
-
-	if len(seriesMap) <= 5 {
-		scope.QueryWith(ctx, zap.Strings("ids", slices.Collect(maps.Keys(seriesMap))))
-	}
-
 	reqBuf := new(bytes.Buffer)
 	reqWriter := multipart.NewWriter(reqBuf)
 
@@ -126,8 +117,6 @@ func (q *Querier) Select(ctx context.Context, sortSeries bool, selectHints *stor
 	schemaWriter := schema.NewWriter(idsWriterBuf).
 		Format(schema.RowBinary).
 		Column("id", rowbinary.String)
-
-	scope.QueryWith(ctx, zap.Int("ids", len(seriesMap)))
 
 	for k := range seriesMap {
 		if err = schemaWriter.WriteValues(k); err != nil {

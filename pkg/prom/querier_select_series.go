@@ -6,7 +6,6 @@ import (
 
 	"github.com/jinzhu/copier"
 	"github.com/pluto-metrics/pluto/pkg/config"
-	"github.com/pluto-metrics/pluto/pkg/scope"
 	"github.com/pluto-metrics/pluto/pkg/sql"
 	"github.com/pluto-metrics/rowbinary"
 	"github.com/pluto-metrics/rowbinary/schema"
@@ -43,10 +42,6 @@ func (q *Querier) selectSeries(ctx context.Context, selectHints *storage.SelectH
 	if err != nil {
 		return nil, err
 	}
-
-	ctx = scope.QueryBegin(ctx)
-	scope.QueryWith(ctx, zap.String("query", qq))
-	defer scope.QueryFinish(ctx)
 
 	chRequest, err := q.request(ctx, seriesCfg.ClickHouse, qq)
 	if err != nil {
