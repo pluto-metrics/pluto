@@ -3,15 +3,14 @@ package insert
 import (
 	"fmt"
 	"io"
+	"log/slog"
 	"net/http"
 
 	"github.com/golang/snappy"
 	"github.com/pluto-metrics/pluto/pkg/config"
 	"github.com/pluto-metrics/pluto/pkg/insert/id"
+	"github.com/pluto-metrics/pluto/pkg/lg"
 	"github.com/pluto-metrics/pluto/pkg/query"
-	"go.uber.org/zap"
-
-	_ "github.com/gogo/protobuf/gogoproto"
 )
 
 type Opts struct {
@@ -33,14 +32,14 @@ func (rcv *PrometheusRemoteWrite) ServeHTTP(w http.ResponseWriter, r *http.Reque
 
 	reqCompressed, err := io.ReadAll(r.Body)
 	if err != nil {
-		zap.L().Error("can't read prometheus request", zap.Error(err))
+		slog.ErrorContext(r.Context(), "can't read prometheus request", lg.Error(err))
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
 
 	reqRaw, err := snappy.Decode(nil, reqCompressed)
 	if err != nil {
-		zap.L().Error("can't decode prometheus request", zap.Error(err))
+		slog.ErrorContext(r.Context(), "can't decode prometheus request", lg.Error(err))
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
@@ -49,7 +48,7 @@ func (rcv *PrometheusRemoteWrite) ServeHTTP(w http.ResponseWriter, r *http.Reque
 		config.NewEnvInsert().WithRequest(r),
 	)
 	if err != nil {
-		zap.L().Error("can't get insert config", zap.Error(err))
+		slog.ErrorContext(r.Context(), "can't get insert config", lg.Error(err))
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
@@ -58,7 +57,7 @@ func (rcv *PrometheusRemoteWrite) ServeHTTP(w http.ResponseWriter, r *http.Reque
 
 	chRequest, err := query.NewRequest(r.Context(), *insertCfg.ClickHouse, query.Opts{})
 	if err != nil {
-		zap.L().Error("can't create request to clickhouse", zap.Error(err))
+		slog.ErrorContext(r.Context(), "can't create request to clickhouse", lg.Error(err))
 		http.Error(w, err.Error(), http.StatusBadGateway)
 		return
 	}
@@ -67,27 +66,27 @@ func (rcv *PrometheusRemoteWrite) ServeHTTP(w http.ResponseWriter, r *http.Reque
 
 	_, err = fmt.Fprint(chRequest, qq)
 	if err != nil {
-		zap.L().Error("can't write query to clickhouse", zap.Error(err))
+		slog.ErrorContext(r.Context(), "can't write query to clickhouse", lg.Error(err))
 		http.Error(w, err.Error(), http.StatusBadGateway)
 		return
 	}
 
 	if err := payloadToRowBinary(reqRaw, chRequest, id.NewNameWithSha256()); err != nil {
-		zap.L().Error("can't write request to clickhouse", zap.Error(err))
+		slog.ErrorContext(r.Context(), "can't write request to clickhouse", lg.Error(err))
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 
 	chResponse, err := chRequest.Finish()
 	if err != nil {
-		zap.L().Error("can't finish request to clickhouse", zap.Error(err))
+		slog.ErrorContext(r.Context(), "can't finish request to clickhouse", lg.Error(err))
 		http.Error(w, err.Error(), http.StatusBadGateway)
 		return
 	}
 
 	err = chResponse.Close()
 	if err != nil {
-		zap.L().Error("can't close response from clickhouse", zap.Error(err))
+		slog.ErrorContext(r.Context(), "can't close response from clickhouse", lg.Error(err))
 		http.Error(w, err.Error(), http.StatusBadGateway)
 		return
 	}

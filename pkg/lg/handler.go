@@ -1,4 +1,4 @@
-package logging
+package lg
 
 import (
 	"context"
@@ -11,13 +11,19 @@ const (
 	slogFields ctxKey = "slogAttrs"
 )
 
-type ContextHandler struct {
+// Handler ...
+type Handler struct {
 	slog.Handler
+}
+
+// NewHandler ...
+func NewHandler(h slog.Handler) slog.Handler {
+	return Handler{Handler: h}
 }
 
 // Handle adds contextual attributes to the Record before calling the underlying
 // handler
-func (h ContextHandler) Handle(ctx context.Context, r slog.Record) error {
+func (h Handler) Handle(ctx context.Context, r slog.Record) error {
 	if attrs, ok := ctx.Value(slogFields).([]slog.Attr); ok {
 		for _, v := range attrs {
 			r.AddAttrs(v)

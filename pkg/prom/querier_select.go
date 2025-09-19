@@ -6,6 +6,7 @@ import (
 	"context"
 	"errors"
 	"io"
+	"log/slog"
 	"maps"
 	"mime/multipart"
 	"slices"
@@ -13,13 +14,13 @@ import (
 
 	"github.com/jinzhu/copier"
 	"github.com/pluto-metrics/pluto/pkg/config"
+	"github.com/pluto-metrics/pluto/pkg/lg"
 	"github.com/pluto-metrics/pluto/pkg/query"
 	"github.com/pluto-metrics/pluto/pkg/sql"
 	"github.com/pluto-metrics/rowbinary"
 	"github.com/pluto-metrics/rowbinary/schema"
 	"github.com/prometheus/prometheus/model/labels"
 	"github.com/prometheus/prometheus/storage"
-	"go.uber.org/zap"
 )
 
 // override in unit tests for stable results
@@ -29,7 +30,7 @@ var timeNow = time.Now
 func (q *Querier) Select(ctx context.Context, sortSeries bool, selectHints *storage.SelectHints, labelsMatcher ...*labels.Matcher) storage.SeriesSet {
 	seriesMap, err := q.selectSeries(ctx, selectHints, labelsMatcher)
 	if err != nil {
-		zap.L().Error("can't find series", zap.Error(err))
+		slog.ErrorContext(ctx, "can't find series", lg.Error(err))
 		return errorSeriesSet(err)
 	}
 
@@ -83,7 +84,7 @@ func (q *Querier) Select(ctx context.Context, sortSeries bool, selectHints *stor
 		"step":    step / timestampDiv,
 	})
 	if err != nil {
-		zap.L().Error("can't create request to clickhouse", zap.Error(err))
+		slog.ErrorContext(ctx, "can't create request to clickhouse", lg.Error(err))
 		return errorSeriesSet(err)
 	}
 
@@ -91,7 +92,7 @@ func (q *Querier) Select(ctx context.Context, sortSeries bool, selectHints *stor
 	reqWriter := multipart.NewWriter(reqBuf)
 
 	createErr := func(err error) storage.SeriesSet {
-		zap.L().Error("can't create request to clickhouse", zap.Error(err))
+		slog.ErrorContext(ctx, "can't create request to clickhouse", lg.Error(err))
 		return errorSeriesSet(err)
 	}
 
@@ -143,7 +144,7 @@ func (q *Querier) Select(ctx context.Context, sortSeries bool, selectHints *stor
 
 	_, err = io.Copy(chRequest, reqBuf)
 	if err != nil {
-		zap.L().Error("can't write query to clickhouse", zap.Error(err))
+		slog.ErrorContext(ctx, "can't write query to clickhouse", lg.Error(err))
 		return errorSeriesSet(err)
 	}
 	defer chRequest.Close()
@@ -151,7 +152,7 @@ func (q *Querier) Select(ctx context.Context, sortSeries bool, selectHints *stor
 	chResponse, err := chRequest.Finish()
 	if err != nil {
 		if !errors.Is(err, context.Canceled) {
-			zap.L().Error("can't finish request to clickhouse", zap.Error(err))
+			slog.ErrorContext(ctx, "can't finish request to clickhouse", lg.Error(err))
 		}
 		return errorSeriesSet(err)
 	}
@@ -199,7 +200,7 @@ func (q *Querier) Select(ctx context.Context, sortSeries bool, selectHints *stor
 		}
 		value, _ = schema.Read(r, rowbinary.Float64)
 		if r.Err() != nil {
-			zap.L().Error("can't read row from clickhouse", zap.Error(r.Err()))
+			slog.ErrorContext(ctx, "can't read row from clickhouse", lg.Error(r.Err()))
 			return errorSeriesSet(r.Err())
 		}
 
@@ -207,7 +208,7 @@ func (q *Querier) Select(ctx context.Context, sortSeries bool, selectHints *stor
 	}
 
 	if r.Err() != nil {
-		zap.L().Error("can't read response from clickhouse", zap.Error(r.Err()))
+		slog.ErrorContext(ctx, "can't read response from clickhouse", lg.Error(r.Err()))
 		return errorSeriesSet(r.Err())
 	}
 
@@ -221,7 +222,7 @@ func (q *Querier) Select(ctx context.Context, sortSeries bool, selectHints *stor
 
 	ss, err := makeSeriesSet(data, selectHints)
 	if err != nil {
-		zap.L().Error("can't make series", zap.Error(err))
+		slog.ErrorContext(ctx, "can't make series", lg.Error(err))
 		return errorSeriesSet(err)
 	}
 

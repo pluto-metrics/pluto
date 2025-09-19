@@ -3,14 +3,15 @@ package prom
 import (
 	"bufio"
 	"context"
+	"log/slog"
 
 	"github.com/pluto-metrics/pluto/pkg/config"
+	"github.com/pluto-metrics/pluto/pkg/lg"
 	"github.com/pluto-metrics/pluto/pkg/sql"
 	"github.com/pluto-metrics/rowbinary"
 	"github.com/pluto-metrics/rowbinary/schema"
 	"github.com/prometheus/prometheus/storage"
 	"github.com/prometheus/prometheus/util/annotations"
-	"go.uber.org/zap"
 
 	"github.com/prometheus/prometheus/model/labels"
 )
@@ -53,7 +54,7 @@ func (q *Querier) LabelNames(ctx context.Context, hints *storage.LabelHints, mat
 
 	chResponse, err := chRequest.Finish()
 	if err != nil {
-		zap.L().Error("can't finish request to clickhouse", zap.Error(err))
+		slog.ErrorContext(ctx, "can't finish request to clickhouse", lg.Error(err))
 		return nil, nil, err
 	}
 	defer chResponse.Close()

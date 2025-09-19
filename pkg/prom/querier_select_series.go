@@ -3,15 +3,16 @@ package prom
 import (
 	"bufio"
 	"context"
+	"log/slog"
 
 	"github.com/jinzhu/copier"
 	"github.com/pluto-metrics/pluto/pkg/config"
+	"github.com/pluto-metrics/pluto/pkg/lg"
 	"github.com/pluto-metrics/pluto/pkg/sql"
 	"github.com/pluto-metrics/rowbinary"
 	"github.com/pluto-metrics/rowbinary/schema"
 	"github.com/prometheus/prometheus/model/labels"
 	"github.com/prometheus/prometheus/storage"
-	"go.uber.org/zap"
 )
 
 func (q *Querier) selectSeries(ctx context.Context, selectHints *storage.SelectHints, matchers []*labels.Matcher) (map[string]labels.Labels, error) {
@@ -51,7 +52,7 @@ func (q *Querier) selectSeries(ctx context.Context, selectHints *storage.SelectH
 
 	chResponse, err := chRequest.Finish()
 	if err != nil {
-		zap.L().Error("can't finish request to clickhouse", zap.Error(err))
+		slog.ErrorContext(ctx, "can't finish request to clickhouse", lg.Error(err))
 		return nil, err
 	}
 	defer chResponse.Close()

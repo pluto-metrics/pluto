@@ -10,6 +10,7 @@ import (
 
 	"github.com/pluto-metrics/pluto/pkg/config"
 	"github.com/pluto-metrics/pluto/pkg/insert"
+	"github.com/pluto-metrics/pluto/pkg/lg"
 	"github.com/pluto-metrics/pluto/pkg/listen"
 	"github.com/pluto-metrics/pluto/pkg/prom"
 	"github.com/prometheus/client_golang/prometheus"
@@ -18,7 +19,6 @@ import (
 )
 
 func main() {
-
 	var configFilename string
 	var development bool
 	flag.StringVar(&configFilename, "config", "/etc/pluto/config.yaml", "Config filename")
@@ -26,7 +26,13 @@ func main() {
 	flag.Parse()
 
 	var logLevel = new(slog.LevelVar) // Info by default
-	slog.SetDefault(slog.New(slog.NewJSONHandler(os.Stdout, &slog.HandlerOptions{Level: logLevel})))
+	slog.SetDefault(
+		slog.New(
+			lg.NewHandler(
+				slog.NewJSONHandler(os.Stdout, &slog.HandlerOptions{Level: logLevel}),
+			),
+		),
+	)
 
 	cfg, err := config.LoadFromFile(configFilename)
 	if err != nil {
@@ -39,6 +45,7 @@ func main() {
 	httpManager := listen.NewHTTP()
 	// receiver
 	if cfg.Insert.Enabled {
+		slog.Info("insert enabled", slog.String("listen", cfg.Insert.Listen))
 		mux := httpManager.Mux(cfg.Insert.Listen)
 		rw := insert.NewPrometheusRemoteWrite(insert.Opts{
 			Config: cfg,
@@ -49,6 +56,7 @@ func main() {
 
 	//debug
 	if cfg.Debug.Enabled {
+		slog.Info("debug enabled", slog.String("listen", cfg.Debug.Listen))
 		mux := httpManager.Mux(cfg.Debug.Listen)
 
 		if cfg.Debug.Metrics {
@@ -77,6 +85,7 @@ func main() {
 
 	// prometheus
 	if cfg.Prometheus.Enabled {
+		slog.Info("prometheus enabled", slog.String("listen", cfg.Prometheus.Listen))
 		mux := httpManager.Mux(cfg.Prometheus.Listen)
 
 		p, err := prom.New(ctx, cfg)

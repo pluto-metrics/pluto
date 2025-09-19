@@ -1,9 +1,11 @@
 package config
 
 import (
+	"log/slog"
+
 	"github.com/expr-lang/expr"
+	"github.com/pluto-metrics/pluto/pkg/lg"
 	"github.com/spf13/cast"
-	"go.uber.org/zap"
 )
 
 func (w *ConfigWhen) compileWhen(env any) error {
@@ -28,7 +30,7 @@ func (w *ConfigWhen) When(env any) (bool, error) {
 	}
 	output, err := expr.Run(w.WhenExpr, env)
 	if err != nil {
-		zap.L().Error("can't evaluate expression", zap.String("expr", w.WhenStr), zap.Error(err))
+		slog.Error("can't evaluate expression", slog.String("expr", w.WhenStr), lg.Error(err))
 		return false, err
 	}
 	return cast.ToBool(output), nil
