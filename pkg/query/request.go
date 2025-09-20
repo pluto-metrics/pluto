@@ -27,6 +27,7 @@ type Opts struct {
 	HTTPClient *http.Client
 	QueryID    string
 	Headers    map[string]string
+	Discovery  func(ctx context.Context, dsn string) (string, error)
 }
 
 // Request ...
@@ -39,7 +40,7 @@ type Request struct {
 	writerBuf *bufio.Writer
 
 	finished chan interface{}
-	respErr  error     // read/write with mutexs
+	respErr  error     // read/write with mutex
 	resp     *Response // read/write with mutex
 
 	vars struct {
@@ -57,8 +58,17 @@ type Response struct {
 	}
 }
 
-// New начинает отправлять запрос в КХ
+// New starts a new request to ClickHouse
 func NewRequest(ctx context.Context, cfg config.ClickHouse, opts Opts) (*Request, error) {
+	var err error
+	dsn := cfg.DSN
+	if opts.Discovery != nil {
+		dsn, err = opts.Discovery(ctx, dsn)
+		if err != nil {
+			return nil, err
+		}
+	}
+
 	u, err := url.Parse(cfg.DSN)
 	if err != nil {
 		return nil, err
@@ -208,11 +218,11 @@ func (req *Request) Close() error {
 	return nil
 }
 
-// Finish завершает запрос и начинает вычитывать ответ
+// Finish finishes the request and starts reading the response
 func (req *Request) Finish() (*Response, error) {
 
 	if err := req.writerBuf.Flush(); err != nil {
-		// возможно есть ошибка от сервера
+		// may be an error from the server
 		req.Lock()
 		respErr := req.respErr
 		req.Unlock()
@@ -222,7 +232,7 @@ func (req *Request) Finish() (*Response, error) {
 		return nil, errors.WithStack(err)
 	}
 	if err := req.writer.Close(); err != nil {
-		// возможно есть ошибка от сервера
+		// may be an error from the server
 		req.Lock()
 		respErr := req.respErr
 		req.Unlock()
@@ -242,7 +252,7 @@ func (req *Request) Finish() (*Response, error) {
 	return resp, err
 }
 
-// Read читает данные из ответа
+// Read reads data from the response
 func (resp *Response) Read(p []byte) (int, error) {
 	if resp == nil {
 		return 0, fmt.Errorf("response is nil")
@@ -254,7 +264,7 @@ func (resp *Response) Read(p []byte) (int, error) {
 	return n, err
 }
 
-// Close вычитывает остатки из body
+// Close closes the response and discards any remaining body
 func (resp *Response) Close() error {
 	_, err := io.Copy(io.Discard, resp)
 	return err

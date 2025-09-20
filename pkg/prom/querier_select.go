@@ -137,6 +137,8 @@ func (q *Querier) Select(ctx context.Context, sortSeries bool, selectHints *stor
 		Headers: map[string]string{
 			"Content-Type": reqWriter.FormDataContentType(),
 		},
+		Discovery:  q.config.Extension.ClickHouseDiscovery,
+		HTTPClient: q.config.Extension.HTTPClient,
 	})
 	if err != nil {
 		return createErr(err)

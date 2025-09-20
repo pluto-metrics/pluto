@@ -1,7 +1,9 @@
 package config
 
 import (
+	"context"
 	"log/slog"
+	"net/http"
 	"time"
 
 	"github.com/expr-lang/expr/vm"
@@ -96,49 +98,67 @@ type Config struct {
 		ConfigSamples `yaml:",inline"`
 		ConfigWhen    `yaml:",inline"`
 	} `yaml:"override_samples"`
+
+	Extension struct {
+		ClickHouseDiscovery func(ctx context.Context, dsn string) (string, error)
+		HTTPClient          *http.Client
+	} `yaml:"-"`
 }
 
-func LoadFromFile(filename string) (*Config, error) {
-	cfg := Config{}
+// Validate ...
+func (cfg *Config) Validate() error {
+	return validator.New(validator.WithRequiredStructEnabled()).Struct(cfg)
+}
 
-	var err error
-
-	if err = configor.Load(&cfg, filename); err != nil {
-		return nil, err
-	}
-	if err = validator.New(validator.WithRequiredStructEnabled()).Struct(cfg); err != nil {
-		return nil, err
-	}
-
-	if err = cfg.ClickHouse.compile(); err != nil {
-		return nil, err
+// Compile ...
+func (cfg *Config) Compile() error {
+	if err := cfg.ClickHouse.compile(); err != nil {
+		return err
 	}
 
 	for i := 0; i < len(cfg.OverrideInsert); i++ {
-		if err = cfg.OverrideInsert[i].ClickHouse.compile(); err != nil {
-			return nil, err
+		if err := cfg.OverrideInsert[i].ClickHouse.compile(); err != nil {
+			return err
 		}
-		if err = cfg.OverrideInsert[i].compileWhen(EnvInsert{}); err != nil {
-			return nil, err
+		if err := cfg.OverrideInsert[i].compileWhen(EnvInsert{}); err != nil {
+			return err
 		}
 	}
 
 	for i := 0; i < len(cfg.OverrideSeries); i++ {
-		if err = cfg.OverrideSeries[i].ClickHouse.compile(); err != nil {
-			return nil, err
+		if err := cfg.OverrideSeries[i].ClickHouse.compile(); err != nil {
+			return err
 		}
-		if err = cfg.OverrideSeries[i].compileWhen(EnvSeries{}); err != nil {
-			return nil, err
+		if err := cfg.OverrideSeries[i].compileWhen(EnvSeries{}); err != nil {
+			return err
 		}
 	}
 
 	for i := 0; i < len(cfg.OverrideSamples); i++ {
-		if err = cfg.OverrideSamples[i].ClickHouse.compile(); err != nil {
-			return nil, err
+		if err := cfg.OverrideSamples[i].ClickHouse.compile(); err != nil {
+			return err
 		}
-		if err = cfg.OverrideSamples[i].compileWhen(EnvSamples{}); err != nil {
-			return nil, err
+		if err := cfg.OverrideSamples[i].compileWhen(EnvSamples{}); err != nil {
+			return err
 		}
+	}
+
+	return nil
+}
+
+// LoadFromFile ...
+func LoadFromFile(filename string) (*Config, error) {
+	cfg := Config{}
+
+	if err := configor.Load(&cfg, filename); err != nil {
+		return nil, err
+	}
+	if err := cfg.Validate(); err != nil {
+		return nil, err
+	}
+
+	if err := cfg.Compile(); err != nil {
+		return nil, err
 	}
 
 	return &cfg, nil

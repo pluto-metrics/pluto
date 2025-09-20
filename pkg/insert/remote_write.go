@@ -55,7 +55,10 @@ func (rcv *PrometheusRemoteWrite) ServeHTTP(w http.ResponseWriter, r *http.Reque
 
 	qq := fmt.Sprintf("INSERT INTO %s FORMAT RowBinaryWithNamesAndTypes\n", insertCfg.Table)
 
-	chRequest, err := query.NewRequest(r.Context(), *insertCfg.ClickHouse, query.Opts{})
+	chRequest, err := query.NewRequest(r.Context(), *insertCfg.ClickHouse, query.Opts{
+		Discovery:  rcv.opts.Config.Extension.ClickHouseDiscovery,
+		HTTPClient: rcv.opts.Config.Extension.HTTPClient,
+	})
 	if err != nil {
 		slog.ErrorContext(r.Context(), "can't create request to clickhouse", lg.Error(err))
 		http.Error(w, err.Error(), http.StatusBadGateway)

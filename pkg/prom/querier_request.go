@@ -11,7 +11,10 @@ import (
 )
 
 func (q *Querier) request(ctx context.Context, ch *config.ClickHouse, qq string) (*query.Request, error) {
-	chRequest, err := query.NewRequest(ctx, *ch, query.Opts{})
+	chRequest, err := query.NewRequest(ctx, *ch, query.Opts{
+		Discovery:  q.config.Extension.ClickHouseDiscovery,
+		HTTPClient: q.config.Extension.HTTPClient,
+	})
 	if err != nil {
 		slog.ErrorContext(ctx, "can't create request to clickhouse", lg.Error(err))
 		return nil, err
