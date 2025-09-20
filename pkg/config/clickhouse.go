@@ -7,8 +7,5 @@ type EnvQueryLog struct {
 }
 
 func (ch *ClickHouse) compile() error {
-	if ch == nil {
-		return nil
-	}
-	return ch.QueryLog.compileWhen(EnvQueryLog{})
+	return nil
 }

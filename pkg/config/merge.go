@@ -36,8 +36,6 @@ func mergeClickHouse(values ...*ClickHouse) *ClickHouse {
 		}
 		ret.DSN = mergeZero(values[i].DSN, ret.DSN)
 		ret.Params = mergeNil(values[i].Params, ret.Params)
-		ret.QueryLog.WhenStr = mergeZero(values[i].QueryLog.WhenStr, ret.QueryLog.WhenStr)
-		ret.QueryLog.WhenExpr = mergeNil(values[i].QueryLog.WhenExpr, ret.QueryLog.WhenExpr)
 	}
 	return ret
 }

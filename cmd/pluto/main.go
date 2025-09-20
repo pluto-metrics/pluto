@@ -4,16 +4,18 @@ import (
 	"context"
 	"flag"
 	"log"
+	"log/slog"
 	"net/http/pprof"
+	"os"
 
 	"github.com/pluto-metrics/pluto/pkg/config"
 	"github.com/pluto-metrics/pluto/pkg/insert"
+	"github.com/pluto-metrics/pluto/pkg/lg"
 	"github.com/pluto-metrics/pluto/pkg/listen"
 	"github.com/pluto-metrics/pluto/pkg/prom"
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/collectors"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
-	"go.uber.org/zap"
 )
 
 func main() {
@@ -23,20 +25,27 @@ func main() {
 	flag.BoolVar(&development, "dev", false, "Use development config by default")
 	flag.Parse()
 
-	cfg, err := config.LoadFromFile(configFilename, development)
+	var logLevel = new(slog.LevelVar) // Info by default
+	slog.SetDefault(
+		slog.New(
+			lg.NewHandler(
+				slog.NewJSONHandler(os.Stdout, &slog.HandlerOptions{Level: logLevel}),
+			),
+		),
+	)
+
+	cfg, err := config.LoadFromFile(configFilename)
 	if err != nil {
 		log.Fatal(err)
 	}
 
-	// logging
-	logger := zap.Must(cfg.Logging.Build())
-	defer logger.Sync()
-	defer zap.RedirectStdLog(logger)()
-	defer zap.ReplaceGlobals(logger)()
+	// set log level from config
+	logLevel.Set(cfg.Logging.Level)
 
 	httpManager := listen.NewHTTP()
 	// receiver
 	if cfg.Insert.Enabled {
+		slog.Info("insert enabled", slog.String("listen", cfg.Insert.Listen))
 		mux := httpManager.Mux(cfg.Insert.Listen)
 		rw := insert.NewPrometheusRemoteWrite(insert.Opts{
 			Config: cfg,
@@ -47,6 +56,7 @@ func main() {
 
 	//debug
 	if cfg.Debug.Enabled {
+		slog.Info("debug enabled", slog.String("listen", cfg.Debug.Listen))
 		mux := httpManager.Mux(cfg.Debug.Listen)
 
 		if cfg.Debug.Metrics {
@@ -75,10 +85,15 @@ func main() {
 
 	// prometheus
 	if cfg.Prometheus.Enabled {
-		go func() {
-			promErr := prom.Run(ctx, cfg)
-			log.Fatal(promErr)
-		}()
+		slog.Info("prometheus enabled", slog.String("listen", cfg.Prometheus.Listen))
+		mux := httpManager.Mux(cfg.Prometheus.Listen)
+
+		p, err := prom.New(ctx, cfg)
+		if err != nil {
+			log.Fatal(err)
+		}
+
+		p.Register(mux)
 	}
 
 	go func() {

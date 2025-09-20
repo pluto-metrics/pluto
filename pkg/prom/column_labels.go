@@ -16,25 +16,26 @@ type typeColumnLabels struct {
 func (t *typeColumnLabels) Read(r rb.Reader) (labels.Labels, error) {
 	n, err := rb.UVarint.Read(r)
 	if err != nil {
-		return nil, err
+		return labels.New(), err
 	}
 
-	ret := make(labels.Labels, int(n))
+	ss := make([]string, 0, int(n)*2)
+
 	for i := uint64(0); i < n; i++ {
 		k, err := rb.String.Read(r)
 		if err != nil {
-			return nil, err
+			return labels.New(), err
 		}
-		ret[i].Name = k
+		ss = append(ss, k)
 
 		v, err := rb.String.Read(r)
 		if err != nil {
-			return nil, err
+			return labels.New(), err
 		}
-		ret[i].Value = v
+		ss = append(ss, v)
 	}
 
-	return ret, nil
+	return labels.FromStrings(ss...), nil
 }
 
 // ReadAny implements rb.Type.
@@ -49,23 +50,23 @@ func (t *typeColumnLabels) String() string {
 
 // Write implements rb.Type.
 func (t *typeColumnLabels) Write(w rb.Writer, value labels.Labels) error {
-	err := rb.UVarint.Write(w, uint64(len(value)))
+	err := rb.UVarint.Write(w, uint64(value.Len()))
 	if err != nil {
 		return err
 	}
-	for i := 0; i < len(value); i++ {
-		err = rb.String.Write(w, value[i].Name)
-		if err != nil {
-			return err
-		}
 
-		err = rb.String.Write(w, value[i].Value)
+	value.Range(func(l labels.Label) {
 		if err != nil {
-			return err
+			return
 		}
-	}
+		err = rb.String.Write(w, l.Name)
+		if err != nil {
+			return
+		}
+		err = rb.String.Write(w, l.Value)
+	})
 
-	return nil
+	return err
 }
 
 // WriteAny implements rb.Type.

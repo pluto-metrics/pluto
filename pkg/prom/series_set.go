@@ -84,12 +84,10 @@ func newLabelsSeriesSet(metrics []labels.Labels) storage.SeriesSet {
 func (sit *seriesIterator) Seek(t int64) chunkenc.ValueType {
 	for ; sit.current < len(sit.series.samples); sit.current++ {
 		if sit.series.samples[sit.current].timestamp >= t {
-			// sit.logger().Debug("seriesIterator.Seek", zap.Int64("t", t), zap.Bool("ret", true))
 			return chunkenc.ValFloat
 		}
 	}
 
-	// sit.logger().Debug("seriesIterator.Seek", zap.Int64("t", t), zap.Bool("ret", false))
 	return chunkenc.ValNone
 }
 
@@ -100,7 +98,6 @@ func (sit *seriesIterator) At() (t int64, v float64) {
 		index = 0
 	}
 	p := sit.series.samples[index]
-	// sit.logger().Debug("seriesIterator.At", zap.Int64("t", int64(p.Time)*1000), zap.Float64("v", p.Value))
 	return p.timestamp, p.value
 }
 
@@ -133,10 +130,8 @@ func (sit *seriesIterator) AtT() int64 {
 func (sit *seriesIterator) Next() chunkenc.ValueType {
 	if sit.current < len(sit.series.samples)-1 {
 		sit.current++
-		// sit.logger().Debug("seriesIterator.Next", zap.Bool("ret", true))
 		return chunkenc.ValFloat
 	}
-	// sit.logger().Debug("seriesIterator.Next", zap.Bool("ret", false))
 	return chunkenc.ValNone
 }
 
@@ -148,22 +143,18 @@ func (ss *seriesSet) Err() error { return ss.err }
 
 func (ss *seriesSet) At() storage.Series {
 	if ss == nil || ss.current < 0 || ss.current >= len(ss.data) {
-		// zap.L().Debug("seriesSet.At", zap.String("metricName", "nil"))
 		return nil
 	}
 	s := &ss.data[ss.current]
-	// zap.L().Debug("seriesSet.At", zap.String("metricName", s.name()))
 	return s
 }
 
 func (ss *seriesSet) Next() bool {
 	if ss == nil || ss.current+1 >= len(ss.data) {
-		// zap.L().Debug("seriesSet.Next", zap.Bool("ret", false))
 		return false
 	}
 
 	ss.current++
-	// zap.L().Debug("seriesSet.Next", zap.Bool("ret", true))
 	return true
 }
 

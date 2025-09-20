@@ -9,14 +9,14 @@ import (
 func labelsMapKey(lb labels.Labels) string {
 	v := new(strings.Builder)
 
-	for i, l := range lb {
-		if i > 0 {
+	lb.Range(func(l labels.Label) {
+		if v.Len() > 0 {
 			v.WriteByte('&')
 		}
 		v.WriteString(l.Name)
 		v.WriteByte('=')
 		v.WriteString(l.Value)
-	}
+	})
 
 	return v.String()
 }

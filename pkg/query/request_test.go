@@ -138,7 +138,7 @@ func TestRequestBadRequest(t *testing.T) {
 	defer ts.Close()
 
 	req, err := NewRequest(context.Background(), config.ClickHouse{
-		DSN: fmt.Sprintf("http://"),
+		DSN: "http://",
 	},
 		Opts{
 			// Addr: ts.Listener.Addr().String(),

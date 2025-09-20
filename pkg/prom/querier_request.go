@@ -3,22 +3,23 @@ package prom
 import (
 	"context"
 	"fmt"
+	"log/slog"
 
 	"github.com/pluto-metrics/pluto/pkg/config"
+	"github.com/pluto-metrics/pluto/pkg/lg"
 	"github.com/pluto-metrics/pluto/pkg/query"
-	"go.uber.org/zap"
 )
 
 func (q *Querier) request(ctx context.Context, ch *config.ClickHouse, qq string) (*query.Request, error) {
 	chRequest, err := query.NewRequest(ctx, *ch, query.Opts{})
 	if err != nil {
-		zap.L().Error("can't create request to clickhouse", zap.Error(err))
+		slog.ErrorContext(ctx, "can't create request to clickhouse", lg.Error(err))
 		return nil, err
 	}
 
 	_, err = fmt.Fprint(chRequest, qq)
 	if err != nil {
-		zap.L().Error("can't write query to clickhouse", zap.Error(err))
+		slog.ErrorContext(ctx, "can't write query to clickhouse", lg.Error(err))
 		return nil, err
 	}
 

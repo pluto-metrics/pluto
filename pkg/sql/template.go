@@ -1,10 +1,11 @@
 package sql
 
 import (
+	"log/slog"
 	"strings"
 	"text/template"
 
-	"go.uber.org/zap"
+	"github.com/pluto-metrics/pluto/pkg/lg"
 )
 
 func Template(t string, args interface{}) (string, error) {
@@ -15,7 +16,7 @@ func Template(t string, args interface{}) (string, error) {
 	}
 	tmpl, err := template.New(t).Funcs(funcMap).Parse(t)
 	if err != nil {
-		zap.L().Error("can't parse template", zap.Error(err))
+		slog.Error("can't parse template", lg.Error(err))
 		return "", err
 	}
 
@@ -23,7 +24,7 @@ func Template(t string, args interface{}) (string, error) {
 
 	err = tmpl.Execute(out, args)
 	if err != nil {
-		zap.L().Error("can't execute template", zap.Error(err))
+		slog.Error("can't execute template", lg.Error(err))
 		return "", err
 	}
 
