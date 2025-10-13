@@ -10,7 +10,7 @@ import (
 	"testing"
 
 	"github.com/OneOfOne/xxhash"
-	"github.com/pluto-metrics/rowbinary"
+	"github.com/lomik/rowbinary"
 	"github.com/stretchr/testify/assert"
 )
 

@@ -6,8 +6,8 @@ import (
 
 	"github.com/OneOfOne/xxhash"
 	"github.com/lomik/pluto/pkg/sql"
-	"github.com/pluto-metrics/rowbinary"
-	"github.com/pluto-metrics/rowbinary/schema"
+	"github.com/lomik/rowbinary"
+	"github.com/lomik/rowbinary/schema"
 )
 
 type hashSelectorAlgo int

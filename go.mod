@@ -13,8 +13,8 @@ require (
 	github.com/k0kubun/pp v3.0.1+incompatible
 	github.com/pkg/errors v0.9.1
 	github.com/pluto-metrics/prometheus-ui-static v0.305.0
-	github.com/pluto-metrics/rawpb v0.2.0
-	github.com/pluto-metrics/rowbinary v0.0.0-20241016072233-3f4c44e49f41
+	github.com/lomik/rawpb v0.2.1
+	github.com/lomik/rowbinary v0.0.1
 	github.com/prometheus/client_golang v1.22.0
 	github.com/prometheus/client_model v0.6.2
 	github.com/prometheus/common v0.65.0

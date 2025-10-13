@@ -7,9 +7,9 @@ import (
 
 	"github.com/lomik/pluto/pkg/insert/id"
 	"github.com/lomik/pluto/pkg/insert/labels"
-	"github.com/pluto-metrics/rawpb"
-	"github.com/pluto-metrics/rowbinary"
-	"github.com/pluto-metrics/rowbinary/schema"
+	"github.com/lomik/rawpb"
+	"github.com/lomik/rowbinary"
+	"github.com/lomik/rowbinary/schema"
 )
 
 var pbTimeseriesPool = sync.Pool{

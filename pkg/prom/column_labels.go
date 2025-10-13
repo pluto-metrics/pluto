@@ -3,7 +3,7 @@ package prom
 import (
 	"errors"
 
-	rb "github.com/pluto-metrics/rowbinary"
+	rb "github.com/lomik/rowbinary"
 	"github.com/prometheus/prometheus/model/labels"
 )
 

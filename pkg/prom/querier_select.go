@@ -17,8 +17,8 @@ import (
 	"github.com/lomik/pluto/pkg/lg"
 	"github.com/lomik/pluto/pkg/query"
 	"github.com/lomik/pluto/pkg/sql"
-	"github.com/pluto-metrics/rowbinary"
-	"github.com/pluto-metrics/rowbinary/schema"
+	"github.com/lomik/rowbinary"
+	"github.com/lomik/rowbinary/schema"
 	"github.com/prometheus/prometheus/model/labels"
 	"github.com/prometheus/prometheus/storage"
 )

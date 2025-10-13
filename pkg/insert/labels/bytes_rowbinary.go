@@ -4,7 +4,7 @@ import (
 	"errors"
 	"unsafe"
 
-	rb "github.com/pluto-metrics/rowbinary"
+	rb "github.com/lomik/rowbinary"
 )
 
 var ColumnBytes rb.Type[[]Bytes] = &typeColumnBytes{}
