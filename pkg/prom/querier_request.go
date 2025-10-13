@@ -5,9 +5,9 @@ import (
 	"fmt"
 	"log/slog"
 
-	"github.com/pluto-metrics/pluto/pkg/config"
-	"github.com/pluto-metrics/pluto/pkg/lg"
-	"github.com/pluto-metrics/pluto/pkg/query"
+	"github.com/lomik/pluto/pkg/config"
+	"github.com/lomik/pluto/pkg/lg"
+	"github.com/lomik/pluto/pkg/query"
 )
 
 func (q *Querier) request(ctx context.Context, ch *config.ClickHouse, qq string) (*query.Request, error) {

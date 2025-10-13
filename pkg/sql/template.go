@@ -5,7 +5,7 @@ import (
 	"strings"
 	"text/template"
 
-	"github.com/pluto-metrics/pluto/pkg/lg"
+	"github.com/lomik/pluto/pkg/lg"
 )
 
 func Template(t string, args interface{}) (string, error) {

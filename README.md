@@ -21,7 +21,7 @@ Pluto is a high-performance Prometheus remote write adapter that stores metrics 
 ### From Source
 
 ```bash
-git clone https://github.com/pluto-metrics/pluto.git
+git clone https://github.com/lomik/pluto.git
 cd pluto
 go build -o pluto ./cmd/pluto
 ```

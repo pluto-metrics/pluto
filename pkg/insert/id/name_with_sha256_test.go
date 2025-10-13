@@ -3,7 +3,7 @@ package id
 import (
 	"testing"
 
-	"github.com/pluto-metrics/pluto/pkg/insert/labels"
+	"github.com/lomik/pluto/pkg/insert/labels"
 )
 
 func BenchmarkNameWithSHA256(b *testing.B) {

@@ -1,7 +1,7 @@
 package id
 
 import (
-	"github.com/pluto-metrics/pluto/pkg/insert/labels"
+	"github.com/lomik/pluto/pkg/insert/labels"
 )
 
 type Provider interface {

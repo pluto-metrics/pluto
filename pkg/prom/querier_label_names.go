@@ -5,9 +5,9 @@ import (
 	"context"
 	"log/slog"
 
-	"github.com/pluto-metrics/pluto/pkg/config"
-	"github.com/pluto-metrics/pluto/pkg/lg"
-	"github.com/pluto-metrics/pluto/pkg/sql"
+	"github.com/lomik/pluto/pkg/config"
+	"github.com/lomik/pluto/pkg/lg"
+	"github.com/lomik/pluto/pkg/sql"
 	"github.com/pluto-metrics/rowbinary"
 	"github.com/pluto-metrics/rowbinary/schema"
 	"github.com/prometheus/prometheus/storage"

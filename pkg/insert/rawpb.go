@@ -5,8 +5,8 @@ import (
 	"sync"
 	"unsafe"
 
-	"github.com/pluto-metrics/pluto/pkg/insert/id"
-	"github.com/pluto-metrics/pluto/pkg/insert/labels"
+	"github.com/lomik/pluto/pkg/insert/id"
+	"github.com/lomik/pluto/pkg/insert/labels"
 	"github.com/pluto-metrics/rawpb"
 	"github.com/pluto-metrics/rowbinary"
 	"github.com/pluto-metrics/rowbinary/schema"

@@ -3,8 +3,8 @@ package prom
 import (
 	"context"
 
-	"github.com/pluto-metrics/pluto/pkg/config"
-	"github.com/pluto-metrics/pluto/pkg/sql"
+	"github.com/lomik/pluto/pkg/config"
+	"github.com/lomik/pluto/pkg/sql"
 	"github.com/prometheus/prometheus/model/labels"
 )
 

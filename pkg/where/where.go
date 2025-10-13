@@ -7,7 +7,7 @@ import (
 	"strings"
 	"unsafe"
 
-	"github.com/pluto-metrics/pluto/pkg/errs"
+	"github.com/lomik/pluto/pkg/errs"
 )
 
 func unsafeString(b []byte) string {

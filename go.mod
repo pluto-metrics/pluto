@@ -1,4 +1,4 @@
-module github.com/pluto-metrics/pluto
+module github.com/lomik/pluto
 
 go 1.24.0
 

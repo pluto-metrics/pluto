@@ -9,7 +9,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/pluto-metrics/pluto/pkg/config"
+	"github.com/lomik/pluto/pkg/config"
 	"github.com/stretchr/testify/assert"
 )
 

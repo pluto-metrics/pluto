@@ -4,7 +4,7 @@ import (
 	"log/slog"
 
 	"github.com/expr-lang/expr"
-	"github.com/pluto-metrics/pluto/pkg/lg"
+	"github.com/lomik/pluto/pkg/lg"
 	"github.com/spf13/cast"
 )
 

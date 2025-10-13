@@ -9,7 +9,7 @@ import (
 	"sort"
 	"unsafe"
 
-	"github.com/pluto-metrics/pluto/pkg/insert/labels"
+	"github.com/lomik/pluto/pkg/insert/labels"
 )
 
 func unsafeBytesToString(b []byte) string {

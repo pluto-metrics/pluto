@@ -32,7 +32,7 @@ import (
 	api_v1 "github.com/prometheus/prometheus/web/api/v1"
 	"github.com/prometheus/prometheus/web/ui"
 
-	"github.com/pluto-metrics/pluto/pkg/config"
+	"github.com/lomik/pluto/pkg/config"
 	uiStatic "github.com/pluto-metrics/prometheus-ui-static"
 	"github.com/prometheus/common/assets"
 )

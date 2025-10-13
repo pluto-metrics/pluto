@@ -5,7 +5,7 @@ import (
 	"iter"
 
 	"github.com/OneOfOne/xxhash"
-	"github.com/pluto-metrics/pluto/pkg/sql"
+	"github.com/lomik/pluto/pkg/sql"
 	"github.com/pluto-metrics/rowbinary"
 	"github.com/pluto-metrics/rowbinary/schema"
 )

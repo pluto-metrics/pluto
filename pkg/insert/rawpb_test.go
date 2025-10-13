@@ -8,7 +8,7 @@ import (
 	"os"
 	"testing"
 
-	"github.com/pluto-metrics/pluto/pkg/insert/id"
+	"github.com/lomik/pluto/pkg/insert/id"
 
 	_ "github.com/k0kubun/pp" // just for keep dep
 )

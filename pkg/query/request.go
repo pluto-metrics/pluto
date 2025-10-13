@@ -10,8 +10,8 @@ import (
 	"strings"
 	"sync"
 
+	"github.com/lomik/pluto/pkg/config"
 	"github.com/pkg/errors"
-	"github.com/pluto-metrics/pluto/pkg/config"
 )
 
 const (

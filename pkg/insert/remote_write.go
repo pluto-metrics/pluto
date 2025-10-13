@@ -7,10 +7,10 @@ import (
 	"net/http"
 
 	"github.com/golang/snappy"
-	"github.com/pluto-metrics/pluto/pkg/config"
-	"github.com/pluto-metrics/pluto/pkg/insert/id"
-	"github.com/pluto-metrics/pluto/pkg/lg"
-	"github.com/pluto-metrics/pluto/pkg/query"
+	"github.com/lomik/pluto/pkg/config"
+	"github.com/lomik/pluto/pkg/insert/id"
+	"github.com/lomik/pluto/pkg/lg"
+	"github.com/lomik/pluto/pkg/query"
 )
 
 type Opts struct {
