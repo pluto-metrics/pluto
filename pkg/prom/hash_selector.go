@@ -7,7 +7,6 @@ import (
 	"github.com/OneOfOne/xxhash"
 	"github.com/lomik/pluto/pkg/sql"
 	"github.com/lomik/rowbinary"
-	"github.com/lomik/rowbinary/schema"
 )
 
 type hashSelectorAlgo int
@@ -60,14 +59,14 @@ func (h *hashSelector) ColumnType() rowbinary.Any {
 	return rowbinary.String
 }
 
-func (h *hashSelector) SchemaRead(r *schema.Reader) (string, error) {
-	if h.algo == hashSelectorAlgoXxHash32 {
-		v, err := schema.Read(r, rowbinary.UInt32)
-		if err != nil {
-			return "", err
-		}
-		return h.mp32[v], nil
-	}
+// func (h *hashSelector) SchemaRead(r *schema.Reader) (string, error) {
+// 	if h.algo == hashSelectorAlgoXxHash32 {
+// 		v, err := schema.Read(r, rowbinary.UInt32)
+// 		if err != nil {
+// 			return "", err
+// 		}
+// 		return h.mp32[v], nil
+// 	}
 
-	return schema.Read(r, rowbinary.String)
-}
+// 	return schema.Read(r, rowbinary.String)
+// }

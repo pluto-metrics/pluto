@@ -3,18 +3,26 @@ package prom
 import (
 	"errors"
 
-	rb "github.com/lomik/rowbinary"
+	"github.com/lomik/rowbinary"
 	"github.com/prometheus/prometheus/model/labels"
 )
 
-var ColumnLabels rb.Type[labels.Labels] = &typeColumnLabels{}
+var ColumnLabels rowbinary.Type[labels.Labels] = rowbinary.MakeTypeWrapAny(&typeColumnLabels{})
 
 type typeColumnLabels struct {
 }
 
-// Read implements rb.Type.
-func (t *typeColumnLabels) Read(r rb.Reader) (labels.Labels, error) {
-	n, err := rb.UVarint.Read(r)
+// String implements rb.Type.
+func (t typeColumnLabels) String() string {
+	return rowbinary.Map(rowbinary.String, rowbinary.String).String()
+}
+
+func (t typeColumnLabels) Binary() []byte {
+	return rowbinary.Map(rowbinary.String, rowbinary.String).Binary()
+}
+
+func (t typeColumnLabels) Scan(r rowbinary.Reader, value *labels.Labels) error {
+	n, err := rowbinary.VarintRead(r)
 	if err != nil {
 		return labels.New(), err
 	}
@@ -22,58 +30,25 @@ func (t *typeColumnLabels) Read(r rb.Reader) (labels.Labels, error) {
 	ss := make([]string, 0, int(n)*2)
 
 	for i := uint64(0); i < n; i++ {
-		k, err := rb.String.Read(r)
+		k, err := rowbinary.String.Read(r)
 		if err != nil {
 			return labels.New(), err
 		}
 		ss = append(ss, k)
 
-		v, err := rb.String.Read(r)
+		v, err := rowbinary.String.Read(r)
 		if err != nil {
 			return labels.New(), err
 		}
 		ss = append(ss, v)
 	}
 
-	return labels.FromStrings(ss...), nil
-}
+	*value = labels.FromStrings(ss...)
 
-// ReadAny implements rb.Type.
-func (t *typeColumnLabels) ReadAny(r rb.Reader) (any, error) {
-	return t.Read(r)
-}
-
-// String implements rb.Type.
-func (t *typeColumnLabels) String() string {
-	return "Map(String, String)"
+	return nil
 }
 
 // Write implements rb.Type.
-func (t *typeColumnLabels) Write(w rb.Writer, value labels.Labels) error {
-	err := rb.UVarint.Write(w, uint64(value.Len()))
-	if err != nil {
-		return err
-	}
-
-	value.Range(func(l labels.Label) {
-		if err != nil {
-			return
-		}
-		err = rb.String.Write(w, l.Name)
-		if err != nil {
-			return
-		}
-		err = rb.String.Write(w, l.Value)
-	})
-
-	return err
-}
-
-// WriteAny implements rb.Type.
-func (t *typeColumnLabels) WriteAny(w rb.Writer, v any) error {
-	value, ok := v.(labels.Labels)
-	if !ok {
-		return errors.New("unexpected type")
-	}
-	return t.Write(w, value)
+func (t *typeColumnLabels) Write(w rowbinary.Writer, value labels.Labels) error {
+	return errors.ErrUnsupported
 }

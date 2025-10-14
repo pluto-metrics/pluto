@@ -1,8 +1,6 @@
 package id
 
-import (
-	"github.com/lomik/pluto/pkg/insert/labels"
-)
+import "github.com/lomik/rowbinary"
 
 type Noop struct {
 }
@@ -21,5 +19,5 @@ func (h *Noop) Name() []byte {
 	return noopBytes
 }
 
-func (h *Noop) Update(labels []labels.Bytes) {
+func (h *Noop) Update(labels []rowbinary.KV[[]byte, []byte]) {
 }

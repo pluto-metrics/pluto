@@ -1,23 +1,17 @@
 package insert
 
 import (
-	"io"
 	"sync"
-	"unsafe"
 
-	"github.com/lomik/pluto/pkg/insert/id"
-	"github.com/lomik/pluto/pkg/insert/labels"
-	"github.com/lomik/rawpb"
 	"github.com/lomik/rowbinary"
-	"github.com/lomik/rowbinary/schema"
 )
 
 var pbTimeseriesPool = sync.Pool{
-	New: func() interface{} { return &pbTimeseries{} },
-}
-
-func unsafeBytesToString(b []byte) string {
-	return unsafe.String(unsafe.SliceData(b), len(b))
+	New: func() interface{} {
+		return &pbTimeseries{
+			Labels: rowbinary.NewKV(),
+		}
+	},
 }
 
 type pbSample struct {
@@ -26,28 +20,35 @@ type pbSample struct {
 }
 
 type pbTimeseries struct {
-	Labels  []labels.Bytes
-	Samples []pbSample
+	Labels         *rowbinary.KV[[]byte, []byte]
+	Samples        []pbSample
+	lastLabelName  []byte
+	lastLabelValue []byte
 }
 
 func (p *pbTimeseries) begin() error {
-	p.Labels = p.Labels[:0]
+	p.Labels.Reset()
 	p.Samples = p.Samples[:0]
 	return nil
 }
 
 func (p *pbTimeseries) labelBegin() error {
-	p.Labels = append(p.Labels, labels.Bytes{})
+	p.lastLabelName = nil
+	p.lastLabelValue = nil
 	return nil
 }
 
 func (p *pbTimeseries) labelName(v []byte) error {
-	p.Labels[len(p.Labels)-1].Name = v
+	p.lastLabelName = v
 	return nil
 }
 
 func (p *pbTimeseries) labelValue(v []byte) error {
-	p.Labels[len(p.Labels)-1].Value = v
+	p.lastLabelValue = v
+	return nil
+}
+func (p *pbTimeseries) labelEnd() error {
+	p.Labels.Append(p.lastLabelName, p.lastLabelValue)
 	return nil
 }
 
@@ -62,64 +63,5 @@ func (p *pbTimeseries) sampleValue(v float64) error {
 
 func (p *pbTimeseries) sampleTimestamp(v int64) error {
 	p.Samples[len(p.Samples)-1].Timestamp = v
-	return nil
-}
-
-func payloadToRowBinary(raw []byte, w io.Writer, h id.Provider) error {
-	ws := schema.NewWriter(w).
-		Format(schema.RowBinaryWithNamesAndTypes).
-		Column("id", rowbinary.String).
-		Column("name", rowbinary.String).
-		Column("labels", labels.ColumnBytes).
-		Column("timestamp", rowbinary.Int64).
-		Column("value", rowbinary.Float64)
-
-	if err := ws.WriteHeader(); err != nil {
-		return err
-	}
-
-	ts := pbTimeseriesPool.Get().(*pbTimeseries)
-	defer pbTimeseriesPool.Put(ts)
-
-	parser := rawpb.New(
-		rawpb.Message(1, rawpb.New(
-			rawpb.Begin(ts.begin),
-			rawpb.Message(1, rawpb.New(
-				rawpb.Begin(ts.labelBegin),
-				rawpb.Bytes(1, ts.labelName),
-				rawpb.Bytes(2, ts.labelValue),
-			)),
-			rawpb.Message(2, rawpb.New(
-				rawpb.Begin(ts.sampleBegin),
-				rawpb.Double(1, ts.sampleValue),
-				rawpb.Int64(2, ts.sampleTimestamp),
-			)),
-			rawpb.End(func() error {
-				if len(ts.Labels) == 0 || len(ts.Samples) == 0 {
-					return nil
-				}
-				h.Update(ts.Labels)
-
-				for j := 0; j < len(ts.Samples); j++ {
-					if err := ws.WriteValues(
-						unsafeBytesToString(h.ID()),
-						unsafeBytesToString(h.Name()),
-						ts.Labels,
-						ts.Samples[j].Timestamp,
-						ts.Samples[j].Value,
-					); err != nil {
-						return err
-					}
-				}
-
-				return nil
-			}),
-		)),
-	)
-
-	if err := parser.Parse(raw); err != nil {
-		return err
-	}
-
 	return nil
 }

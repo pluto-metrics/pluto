@@ -1,11 +1,11 @@
 package id
 
 import (
-	"github.com/lomik/pluto/pkg/insert/labels"
+	"github.com/lomik/rowbinary"
 )
 
 type Provider interface {
-	Update(labels []labels.Bytes)
+	Update(labels *rowbinary.KV[[]byte, []byte])
 	ID() []byte
 	Name() []byte
 }

@@ -1,7 +1,6 @@
 package prom
 
 import (
-	"bufio"
 	"context"
 	"log/slog"
 
@@ -9,7 +8,6 @@ import (
 	"github.com/lomik/pluto/pkg/lg"
 	"github.com/lomik/pluto/pkg/sql"
 	"github.com/lomik/rowbinary"
-	"github.com/lomik/rowbinary/schema"
 	"github.com/prometheus/prometheus/storage"
 	"github.com/prometheus/prometheus/util/annotations"
 
@@ -46,33 +44,27 @@ func (q *Querier) LabelNames(ctx context.Context, hints *storage.LabelHints, mat
 		return nil, nil, err
 	}
 
-	chRequest, err := q.request(ctx, seriesCfg.ClickHouse, qq)
-	if err != nil {
-		return nil, nil, err
-	}
-	defer chRequest.Close()
-
-	chResponse, err := chRequest.Finish()
-	if err != nil {
-		slog.ErrorContext(ctx, "can't finish request to clickhouse", lg.Error(err))
-		return nil, nil, err
-	}
-	defer chResponse.Close()
-
-	r := schema.NewReader(bufio.NewReader(chResponse)).
-		Format(schema.RowBinary).
-		Column(rowbinary.String)
+	chClient := rowbinary.NewClient(
+		rowbinary.WithDiscovery(q.config.Extension.ClickHouseDiscovery),
+		rowbinary.WithHTTPClient(q.config.Extension.HTTPClient),
+		seriesCfg.ClickHouse.RowBinaryOptions()...,
+	)
+	defer chClient.Close()
 
 	rows := []string{}
-	for r.Next() {
-		row, err := schema.Read(r, rowbinary.String)
-		if err != nil {
-			return nil, nil, err
-		}
-		rows = append(rows, row)
-	}
 
-	if r.Err() != nil {
+	err = chClient.Select(ctx, qq,
+		rowbinary.WithFormatReader(func(r *rowbinary.FormatReader) error {
+			var s string
+			for r.Next() {
+				rowbinary.Scan(r, rowbinary.String, &s)
+				rows = append(rows, s)
+			}
+			return r.Err()
+		}),
+	)
+	if err != nil {
+		slog.ErrorContext(ctx, "can't finish request to clickhouse", lg.Error(err))
 		return nil, nil, err
 	}
 
