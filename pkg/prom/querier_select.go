@@ -88,6 +88,25 @@ func (q *Querier) Select(ctx context.Context, sortSeries bool, selectHints *stor
 		return errorSeriesSet(err)
 	}
 
+	chClient := rowbinary.NewClient(
+		rowbinary.WithDiscovery(q.config.Extension.ClickHouseDiscovery),
+		rowbinary.WithHTTPClient(q.config.Extension.HTTPClient),
+		samplesCfg.ClickHouse.RowBinaryOptions()...,
+	)
+	defer chClient.Close()
+
+	err = chClient.Select(ctx, qq,
+		rowbinary.WithExternalData(),
+		rowbinary.WithFormatReader(func(r *rowbinary.FormatReader) error {
+			// @TODO: read
+			return r.Err()
+		}),
+	)
+	if err != nil {
+		slog.ErrorContext(ctx, "can't finish request to clickhouse", lg.Error(err))
+		return errorSeriesSet(err)
+	}
+
 	reqBuf := new(bytes.Buffer)
 	reqWriter := multipart.NewWriter(reqBuf)
 
