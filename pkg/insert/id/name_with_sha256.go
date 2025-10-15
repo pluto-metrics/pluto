@@ -6,14 +6,10 @@ import (
 	"crypto/sha256"
 	"encoding/hex"
 	"hash"
-	"unsafe"
+	"sort"
 
-	"github.com/lomik/rowbinary"
+	"github.com/lomik/pluto/pkg/insert/labels"
 )
-
-func unsafeBytesToString(b []byte) string {
-	return unsafe.String(unsafe.SliceData(b), len(b))
-}
 
 var labelName = []byte("__name__")
 
@@ -42,32 +38,29 @@ func (h *NameWithSha256) Name() []byte {
 	return h.name
 }
 
-func (h *NameWithSha256) Update(labels *rowbinary.KV[[]byte, []byte]) {
+func (h *NameWithSha256) Update(labels []labels.Label) {
 	h.name = nil
 	h.id = nil
 
-	labels.Sort(func(a, b []byte) bool { return bytes.Compare(a, b) < 0 })
+	sort.Slice(labels, func(i, j int) bool {
+		return bytes.Compare(labels[i].Name, labels[j].Name) < 0
+	})
 
 	h.hh.Reset()
 	h.hb.Reset(h.hh)
 
-	i := 0
-	labels.Each(func(key, value []byte) error {
+	for i := 0; i < len(labels); i++ {
 		if i > 0 {
 			h.hb.WriteByte('&')
 		}
-		h.hb.Write(key)
+		h.hb.Write(labels[i].Name)
 		h.hb.WriteByte('=')
-		h.hb.Write(value)
+		h.hb.Write(labels[i].Value)
 
-		if h.name == nil && bytes.Equal(key, labelName) {
-			h.name = value
+		if h.name == nil && bytes.Equal(labels[i].Name, labelName) {
+			h.name = labels[i].Value
 		}
-
-		i++
-		return nil
-	})
-
+	}
 	h.hb.Flush()
 
 	if len(h.id) < len(h.name)+65 {

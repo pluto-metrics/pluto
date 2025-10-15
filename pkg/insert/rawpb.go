@@ -3,13 +3,13 @@ package insert
 import (
 	"sync"
 
-	"github.com/lomik/rowbinary"
+	"github.com/lomik/pluto/pkg/insert/labels"
 )
 
 var pbTimeseriesPool = sync.Pool{
-	New: func() interface{} {
+	New: func() any {
 		return &pbTimeseries{
-			Labels: rowbinary.NewKV(),
+			Labels: make([]labels.Label, 0),
 		}
 	},
 }
@@ -20,35 +20,30 @@ type pbSample struct {
 }
 
 type pbTimeseries struct {
-	Labels         *rowbinary.KV[[]byte, []byte]
+	Labels         []labels.Label
 	Samples        []pbSample
 	lastLabelName  []byte
 	lastLabelValue []byte
 }
 
 func (p *pbTimeseries) begin() error {
-	p.Labels.Reset()
+	p.Labels = p.Labels[:0]
 	p.Samples = p.Samples[:0]
 	return nil
 }
 
 func (p *pbTimeseries) labelBegin() error {
-	p.lastLabelName = nil
-	p.lastLabelValue = nil
+	p.Labels = append(p.Labels, labels.Label{})
 	return nil
 }
 
 func (p *pbTimeseries) labelName(v []byte) error {
-	p.lastLabelName = v
+	p.Labels[len(p.Labels)-1].Name = v
 	return nil
 }
 
 func (p *pbTimeseries) labelValue(v []byte) error {
-	p.lastLabelValue = v
-	return nil
-}
-func (p *pbTimeseries) labelEnd() error {
-	p.Labels.Append(p.lastLabelName, p.lastLabelValue)
+	p.Labels[len(p.Labels)-1].Value = v
 	return nil
 }
 

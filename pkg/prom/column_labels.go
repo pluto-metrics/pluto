@@ -7,7 +7,7 @@ import (
 	"github.com/prometheus/prometheus/model/labels"
 )
 
-var ColumnLabels rowbinary.Type[labels.Labels] = rowbinary.MakeTypeWrapAny(&typeColumnLabels{})
+var ColumnLabels rowbinary.Type[labels.Labels] = rowbinary.MakeTypeWrapAny[labels.Labels](typeColumnLabels{})
 
 type typeColumnLabels struct {
 }
@@ -24,21 +24,20 @@ func (t typeColumnLabels) Binary() []byte {
 func (t typeColumnLabels) Scan(r rowbinary.Reader, value *labels.Labels) error {
 	n, err := rowbinary.VarintRead(r)
 	if err != nil {
-		return labels.New(), err
+		return err
 	}
 
 	ss := make([]string, 0, int(n)*2)
+	var k, v string
 
-	for i := uint64(0); i < n; i++ {
-		k, err := rowbinary.String.Read(r)
-		if err != nil {
-			return labels.New(), err
+	for range n {
+		if err = rowbinary.String.Scan(r, &k); err != nil {
+			return err
 		}
 		ss = append(ss, k)
 
-		v, err := rowbinary.String.Read(r)
-		if err != nil {
-			return labels.New(), err
+		if err = rowbinary.String.Scan(r, &v); err != nil {
+			return err
 		}
 		ss = append(ss, v)
 	}
@@ -49,6 +48,6 @@ func (t typeColumnLabels) Scan(r rowbinary.Reader, value *labels.Labels) error {
 }
 
 // Write implements rb.Type.
-func (t *typeColumnLabels) Write(w rowbinary.Writer, value labels.Labels) error {
+func (t typeColumnLabels) Write(w rowbinary.Writer, value labels.Labels) error {
 	return errors.ErrUnsupported
 }

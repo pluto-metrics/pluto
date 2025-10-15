@@ -59,14 +59,17 @@ func (h *hashSelector) ColumnType() rowbinary.Any {
 	return rowbinary.String
 }
 
-// func (h *hashSelector) SchemaRead(r *schema.Reader) (string, error) {
-// 	if h.algo == hashSelectorAlgoXxHash32 {
-// 		v, err := schema.Read(r, rowbinary.UInt32)
-// 		if err != nil {
-// 			return "", err
-// 		}
-// 		return h.mp32[v], nil
-// 	}
+func (h *hashSelector) SchemaRead(r *rowbinary.FormatReader) (string, error) {
+	if h.algo == hashSelectorAlgoXxHash32 {
+		var v uint32
+		err := rowbinary.Scan(r, rowbinary.UInt32, &v)
+		if err != nil {
+			return "", err
+		}
+		return h.mp32[v], nil
+	}
 
-// 	return schema.Read(r, rowbinary.String)
-// }
+	var v string
+	err := rowbinary.Scan(r, rowbinary.String, &v)
+	return v, err
+}

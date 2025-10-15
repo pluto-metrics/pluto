@@ -6,8 +6,10 @@ import (
 	"net/http"
 
 	"github.com/golang/snappy"
+	"github.com/lomik/pluto/pkg/cli"
 	"github.com/lomik/pluto/pkg/config"
 	"github.com/lomik/pluto/pkg/insert/id"
+	"github.com/lomik/pluto/pkg/insert/labels"
 	"github.com/lomik/pluto/pkg/lg"
 	"github.com/lomik/rawpb"
 	"github.com/lomik/rowbinary"
@@ -53,16 +55,12 @@ func (rcv *PrometheusRemoteWrite) ServeHTTP(w http.ResponseWriter, r *http.Reque
 		return
 	}
 
-	chClient := rowbinary.NewClient(
-		rowbinary.WithDiscovery(rcv.opts.Config.Extension.ClickHouseDiscovery),
-		rowbinary.WithHTTPClient(rcv.opts.Config.Extension.HTTPClient),
-		insertCfg.ClickHouse.RowBinaryOptions()...,
-	)
-	defer chClient.Close()
+	ch := cli.New(r.Context(), rcv.opts.Config, insertCfg.ClickHouse)
+	defer ch.Close()
 
 	typeLabels := rowbinary.MapKV(rowbinary.StringBytes, rowbinary.StringBytes)
 
-	err = chClient.Insert(r.Context(),
+	err = ch.Insert(r.Context(),
 		insertCfg.Table,
 		rowbinary.RowBinaryWithNamesAndTypes,
 		rowbinary.WithColumn("id", rowbinary.StringBytes),
@@ -84,7 +82,6 @@ func (rcv *PrometheusRemoteWrite) ServeHTTP(w http.ResponseWriter, r *http.Reque
 						rawpb.Begin(ts.labelBegin),
 						rawpb.Bytes(1, ts.labelName),
 						rawpb.Bytes(2, ts.labelValue),
-						rawpb.Begin(ts.labelEnd),
 					)),
 					rawpb.Message(2, rawpb.New(
 						rawpb.Begin(ts.sampleBegin),
@@ -100,7 +97,7 @@ func (rcv *PrometheusRemoteWrite) ServeHTTP(w http.ResponseWriter, r *http.Reque
 						for j := 0; j < len(ts.Samples); j++ {
 							rowbinary.Write(rbw, rowbinary.StringBytes, h.ID())
 							rowbinary.Write(rbw, rowbinary.StringBytes, h.Name())
-							rowbinary.Write(rbw, typeLabels, ts.Labels)
+							rowbinary.Write(rbw, labels.ColumnLabels, ts.Labels)
 							rowbinary.Write(rbw, rowbinary.Int64, ts.Samples[j].Timestamp)
 							rowbinary.Write(rbw, rowbinary.Float64, ts.Samples[j].Value)
 

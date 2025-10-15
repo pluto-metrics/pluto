@@ -5,6 +5,7 @@ import (
 	"log/slog"
 
 	"github.com/jinzhu/copier"
+	"github.com/lomik/pluto/pkg/cli"
 	"github.com/lomik/pluto/pkg/config"
 	"github.com/lomik/pluto/pkg/lg"
 	"github.com/lomik/pluto/pkg/sql"
@@ -33,8 +34,7 @@ func (q *Querier) selectSeries(ctx context.Context, selectHints *storage.SelectH
 		FROM {{.table}}
 		{{.where.SQL}}
 		GROUP BY id
-		FORMAT RowBinary
-	`, map[string]interface{}{
+	`, map[string]any{
 		"table": seriesCfg.Table,
 		"where": where,
 	})
@@ -42,16 +42,12 @@ func (q *Querier) selectSeries(ctx context.Context, selectHints *storage.SelectH
 		return nil, err
 	}
 
-	chClient := rowbinary.NewClient(
-		rowbinary.WithDiscovery(q.config.Extension.ClickHouseDiscovery),
-		rowbinary.WithHTTPClient(q.config.Extension.HTTPClient),
-		seriesCfg.ClickHouse.RowBinaryOptions()...,
-	)
-	defer chClient.Close()
+	ch := cli.New(ctx, q.config, seriesCfg.ClickHouse)
+	defer ch.Close()
 
 	ret := make(map[string]labels.Labels)
 
-	err = chClient.Select(ctx, qq,
+	err = ch.Select(ctx, qq,
 		rowbinary.WithFormatReader(func(r *rowbinary.FormatReader) error {
 			for r.Next() {
 				var id string

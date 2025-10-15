@@ -9,6 +9,7 @@ import (
 	"github.com/expr-lang/expr/vm"
 	"github.com/go-playground/validator/v10"
 	"github.com/jinzhu/configor"
+	"github.com/lomik/rowbinary"
 )
 
 type ConfigWhen struct {
@@ -100,7 +101,7 @@ type Config struct {
 	} `yaml:"override_samples"`
 
 	Extension struct {
-		ClickHouseDiscovery func(ctx context.Context, dsn string) (string, error)
+		ClickHouseDiscovery func(ctx context.Context, dsn string, discoveryCtx rowbinary.DiscoveryCtx) (string, error)
 		HTTPClient          *http.Client
 	} `yaml:"-"`
 }

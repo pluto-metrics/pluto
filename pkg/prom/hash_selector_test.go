@@ -56,8 +56,9 @@ func TestClickhouseHash(t *testing.T) {
 			body, err := execLocal(tt.query + " AS value FORMAT RowBinary SETTINGS session_timezone='UTC'")
 			assert.NoError(err)
 
-			r := bytes.NewReader(body)
-			value, err := tt.tp.ReadAny(r)
+			r := rowbinary.NewReader(bytes.NewReader(body))
+			var value string
+			err = tt.tp.ScanAny(r, &value)
 			if assert.NoError(err) {
 				assert.Equal(tt.want, value)
 			}

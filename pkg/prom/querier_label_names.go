@@ -4,6 +4,7 @@ import (
 	"context"
 	"log/slog"
 
+	"github.com/lomik/pluto/pkg/cli"
 	"github.com/lomik/pluto/pkg/config"
 	"github.com/lomik/pluto/pkg/lg"
 	"github.com/lomik/pluto/pkg/sql"
@@ -35,8 +36,7 @@ func (q *Querier) LabelNames(ctx context.Context, hints *storage.LabelHints, mat
 		{{.where.SQL}}
 		GROUP BY value
 		ORDER BY value
-		FORMAT RowBinary
-	`, map[string]interface{}{
+	`, map[string]any{
 		"table": seriesCfg.Table,
 		"where": where,
 	})
@@ -44,16 +44,12 @@ func (q *Querier) LabelNames(ctx context.Context, hints *storage.LabelHints, mat
 		return nil, nil, err
 	}
 
-	chClient := rowbinary.NewClient(
-		rowbinary.WithDiscovery(q.config.Extension.ClickHouseDiscovery),
-		rowbinary.WithHTTPClient(q.config.Extension.HTTPClient),
-		seriesCfg.ClickHouse.RowBinaryOptions()...,
-	)
-	defer chClient.Close()
+	ch := cli.New(ctx, q.config, seriesCfg.ClickHouse)
+	defer ch.Close()
 
 	rows := []string{}
 
-	err = chClient.Select(ctx, qq,
+	err = ch.Select(ctx, qq,
 		rowbinary.WithFormatReader(func(r *rowbinary.FormatReader) error {
 			var s string
 			for r.Next() {

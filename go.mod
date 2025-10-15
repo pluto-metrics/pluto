@@ -2,6 +2,8 @@ module github.com/lomik/pluto
 
 go 1.24.0
 
+replace github.com/lomik/rowbinary => ../rowbinary
+
 require (
 	github.com/OneOfOne/xxhash v1.2.8
 	github.com/expr-lang/expr v1.16.9
@@ -11,10 +13,10 @@ require (
 	github.com/jinzhu/configor v1.2.2
 	github.com/jinzhu/copier v0.4.0
 	github.com/k0kubun/pp v3.0.1+incompatible
+	github.com/lomik/rawpb v1.2.0
+	github.com/lomik/rowbinary v0.0.1
 	github.com/pkg/errors v0.9.1
 	github.com/pluto-metrics/prometheus-ui-static v0.305.0
-	github.com/lomik/rawpb v0.2.1
-	github.com/lomik/rowbinary v0.0.1
 	github.com/prometheus/client_golang v1.22.0
 	github.com/prometheus/client_model v0.6.2
 	github.com/prometheus/common v0.65.0
